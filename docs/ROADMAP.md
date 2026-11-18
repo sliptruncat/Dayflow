@@ -21,11 +21,18 @@ Still required before production use: configure an isolated Supabase project, ap
 
 ## Phase 3 — Calendar
 
-**Outcome:** real tasks and events render in year, month, week and day views; date changes persist.
+**Outcome:** user-owned tasks and events persist and render in responsive year, month, week and day views.
+
+- Review [Calendar technical specification](CALENDAR_SPEC.md) before changing the schema.
+- Add an append-only calendar migration for categories, tasks, events and month-cover metadata, with constraints, indexes, RLS and isolated two-user verification.
+- Add typed repositories, validated APIs and range queries that derive ownership from the session.
+- Build year, month, week and day views; support category colours, deadlines, explicit task completion and confirmed deletion.
+- Add responsive, keyboard-accessible UI states and unit/integration coverage. Add E2E coverage when the runner is introduced.
+- Defer project membership, subtasks, timer sessions, cover uploads/generation and external calendar synchronization to their respective phases.
 
 ## Phase 4 — Tasks and projects
 
-**Outcome:** task lifecycle, task drawer, subtasks, project assignment, filters, search and safe deletion work against the database.
+**Outcome:** build on Phase 3 tasks with project assignment, subtasks, filters, search, attachments, comments and richer lifecycle workflows.
 
 ## Phase 5 — Time tracking
 
