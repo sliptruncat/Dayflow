@@ -1,6 +1,6 @@
 # DAYFLOW — Technical Specification
 
-**Version:** 1.0 · **Status:** Foundation in progress · **Updated:** 2026-11-18
+**Version:** 1.0 · **Status:** Phase 2 implemented; Supabase project setup pending · **Updated:** 2026-11-18
 
 ## Scope and delivery principle
 
@@ -35,6 +35,10 @@ Voice, image extraction, push notifications, external calendars, finance, CRM, h
 5. Timer elapsed time is derived from persisted session timestamps and pause intervals, never solely from an in-memory counter.
 6. Times are stored as `timestamptz`; user timezone is a named IANA zone in preferences.
 7. Deletion of user-created information requires an explicit confirmation; files are authorization-scoped.
+
+## Authentication and preferences
+
+Email/password sign-up, sign-in, sign-out, verification callback and password recovery use Supabase SSR cookies. Middleware refreshes sessions and redirects unauthenticated app requests to `/auth/sign-in`; auth routes remain public. Registration creates the profile and Russian default preferences (`sage`, Monday, 24-hour time) via a database trigger. Authenticated theme changes use a validated server route; local theme storage is only an unauthenticated preview fallback.
 
 ## External services and configuration
 

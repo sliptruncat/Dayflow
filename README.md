@@ -31,6 +31,16 @@ The proposed stack is Next.js, React, TypeScript, and Supabase. The detailed imp
 
 The Foundation theme picker is deliberately a local, non-sensitive preview. It will be synced to `user_preferences` after Phase 2 authentication exists.
 
+## Supabase setup (Phase 2)
+
+1. Create a Supabase project or run one locally with the [Supabase CLI](https://supabase.com/docs/guides/local-development).
+2. Put its **Project URL** and browser-safe **anon/publishable key** in `.env.local` as `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`. Never commit them; never use a service-role key in the browser.
+3. Apply migrations using `supabase db push` for a linked development project, or `supabase db reset` locally.
+4. Under **Authentication → URL Configuration**, add `http://localhost:3000/auth/callback` and every deployed `<origin>/auth/callback`; these URLs also cover password recovery.
+5. Enable Email/password authentication. Production should retain email confirmation and configure SMTP before inviting real users.
+
+Until those public variables exist, the app deliberately shows a setup state and simulates no login or user data. Run the SQL RLS protocol only against local or isolated test infrastructure, never production.
+
 ## Documentation
 
 - [Product brief](docs/PRODUCT_BRIEF.md)

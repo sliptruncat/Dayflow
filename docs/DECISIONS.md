@@ -29,3 +29,9 @@
 **Decision:** dashboards and feature routes begin with empty/setup states rather than sample personal tasks, finances or health data.
 
 **Reason:** it is honest about integration state and avoids mistaking demo data for a user’s life.
+
+## ADR-006: Supabase SSR sessions and trigger-created identity records
+
+**Decision:** use `@supabase/ssr` browser, server and middleware clients; create profiles and defaults through an Auth trigger.
+
+**Reason:** request-boundary cookie refresh and an atomic trigger keep identity records consistent without exposing a service-role key. RLS remains the data boundary.

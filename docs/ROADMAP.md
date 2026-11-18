@@ -1,6 +1,6 @@
 # DAYFLOW — Delivery Roadmap
 
-## Phase 1 — Foundation (current)
+## Phase 1 — Foundation (complete)
 
 **Outcome:** a buildable, responsive Next.js shell with design tokens, navigation, theme preference persistence and explicit empty states. It does not claim persistence for user data until Supabase exists.
 
@@ -9,13 +9,15 @@
 - Add the three starting token themes and local preview preference.
 - Document security boundaries, architecture, services and decisions.
 
-## Phase 2 — Identity and durable data
+## Phase 2 — Identity and durable data (code complete; Supabase setup required)
 
 **Outcome:** a user can authenticate and safely store their profile and preferences.
 
 - Add Supabase clients and auth screens.
 - Create initial migrations, indexes, constraints, RLS and storage policies.
 - Add typed repositories and integration tests for cross-user isolation.
+
+Before production use: apply the migration to local/isolated Supabase and execute the two-user RLS protocol.
 
 ## Phase 3 — Calendar
 

@@ -39,6 +39,10 @@ tests/                 unit, integration and browser tests
 4. PostgreSQL constraints and RLS apply a second ownership boundary.
 5. The service returns typed success or a safe error; UI renders loading, error, empty, and offline-aware states.
 
+## Phase 2 request flow
+
+`middleware.ts` creates a request-scoped Supabase SSR client to refresh Auth cookies and protect application routes. Server Components retrieve the authenticated user, profile and preferences. Browser components use only the anonymous-key client for Auth. Preference updates are validated in a server route and derive ownership from the session, never a browser-supplied owner ID.
+
 ## AI safety boundary
 
 An AI adapter receives only the minimum task context for an operation and produces a schema-validated proposal. The UI displays editable fields and the user confirms. Confirmation passes through the same task service as manual creation. Requests record provider, model, token/cost metadata, outcome and non-sensitive error details; raw private prompts are retained only when a user-controlled retention policy permits it.

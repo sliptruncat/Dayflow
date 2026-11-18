@@ -28,3 +28,7 @@ RLS is enabled on every exposed table. The minimum policy is `owner_id = auth.ui
 ## Migration protocol
 
 Migrations are append-only SQL files under `supabase/migrations/`. Each migration adds constraints, indexes, RLS enablement and policies in the same change. A migration is tested against a local Supabase instance before deployment and checked with a two-user isolation test.
+
+## Phase 2 migration
+
+`202611180001_identity_and_preferences.sql` creates `profiles` and `user_preferences`. The `on_auth_user_created` security-definer trigger atomically creates both rows with `ru`, `UTC`, and `sage` defaults. RLS allows only `profiles.id = auth.uid()` or `user_preferences.owner_id = auth.uid()` and includes ownership checks on writes. The two-user protocol is in `supabase/tests/phase2_rls.sql` and must run only locally or in isolated test infrastructure.

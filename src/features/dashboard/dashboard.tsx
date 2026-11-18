@@ -1,16 +1,6 @@
-export function Dashboard() {
-  const now = new Intl.DateTimeFormat("en", { weekday: "long", month: "long", day: "numeric" }).format(new Date());
-  return (
-    <section className="page-stack">
-      <div className="hero"><p className="eyebrow">{now}</p><h1>Good day.</h1><p>Your personal space is ready. Connect your account to begin planning with real data.</p></div>
-      <div className="card-grid">
-        <article className="feature-card feature-card--primary"><span className="card-kicker">TODAY</span><h2>Nothing scheduled yet</h2><p>After you sign in, today’s tasks, sessions, and events will appear here.</p><Link className="button" href="/tasks">Explore tasks</Link></article>
-        <article className="feature-card"><span className="card-kicker">FOCUS</span><h2>Timer needs a task</h2><p>Time is recorded from durable session timestamps—not a browser counter.</p></article>
-        <article className="feature-card"><span className="card-kicker">AI</span><h2>Proposals stay in your control</h2><p>AI capture will always show editable details before it creates anything.</p></article>
-      </div>
-      <section className="empty-panel"><span className="empty-orb">◌</span><div><h2>Your dashboard will grow with you</h2><p>DAYFLOW deliberately shows no invented tasks, financial figures, sleep scores, or recommendations before there is authorized data.</p></div></section>
-    </section>
-  );
-}
 import Link from "next/link";
 
+export function Dashboard({ configured }: { configured: boolean }) {
+  const now = new Intl.DateTimeFormat("ru-RU", { weekday: "long", month: "long", day: "numeric" }).format(new Date());
+  return <section className="page-stack"><div className="hero"><p className="eyebrow">{now}</p><h1>Добрый день.</h1><p>{configured ? "Ваше личное пространство готово к планированию." : "Подключите Supabase, чтобы безопасно создать личное пространство."}</p></div><div className="card-grid"><article className="feature-card feature-card--primary"><span className="card-kicker">СЕГОДНЯ</span><h2>{configured ? "Пока ничего не запланировано" : "Supabase ещё не подключён"}</h2><p>{configured ? "Задачи, сессии и события появятся здесь, когда следующие модули будут готовы." : "Добавьте URL проекта и anon key в .env.local. Подробный порядок есть в README."}</p><Link className="button" href={configured ? "/tasks" : "/auth/sign-in"}>{configured ? "Открыть задачи" : "Открыть вход"}</Link></article><article className="feature-card"><span className="card-kicker">ФОКУС</span><h2>Таймеру нужна задача</h2><p>Учёт времени будет рассчитан по сохранённым временным меткам, а не счётчику браузера.</p></article><article className="feature-card"><span className="card-kicker">AI</span><h2>Решение остаётся за вами</h2><p>AI всегда покажет редактируемые поля до создания любого дела.</p></article></div><section className="empty-panel"><span className="empty-orb">◌</span><div><h2>Ваш дашборд будет расти вместе с вами</h2><p>DAYFLOW не показывает вымышленные задачи, финансы, показатели сна или рекомендации до появления разрешённых данных.</p></div></section></section>;
+}
