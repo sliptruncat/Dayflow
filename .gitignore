@@ -1,0 +1,20 @@
+# dependencies and build output
+node_modules/
+.next/
+out/
+coverage/
+playwright-report/
+test-results/
+*.tsbuildinfo
+
+# local environment and Supabase state
+.env.local
+.env*.local
+supabase/.temp/
+
+# OS and editor files
+.DS_Store
+*.log
+.idea/
+.vscode/
+!.vscode/extensions.json
