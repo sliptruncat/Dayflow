@@ -24,7 +24,8 @@ Still required before production use: configure an isolated Supabase project, ap
 **Outcome:** user-owned tasks and events persist and render in responsive year, month, week and day views.
 
 - Review [Calendar technical specification](CALENDAR_SPEC.md) before changing the schema.
-- Add an append-only calendar migration for categories, tasks, events and month-cover metadata, with constraints, indexes, RLS and isolated two-user verification.
+- Add an append-only calendar migration for categories, tasks, events and month-cover metadata, with constraints, indexes, RLS and isolated two-user verification. **Implemented in code; isolated Supabase verification remains required.**
+- Update typed database contracts and add a rollback-only SQL test for calendar constraints and two-user isolation. **Implemented in code; execution requires isolated Supabase.**
 - Add typed repositories, validated APIs and range queries that derive ownership from the session.
 - Build year, month, week and day views; support category colours, deadlines, explicit task completion and confirmed deletion.
 - Add responsive, keyboard-accessible UI states and unit/integration coverage. Add E2E coverage when the runner is introduced.

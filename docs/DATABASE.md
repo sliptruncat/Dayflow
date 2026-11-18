@@ -32,3 +32,9 @@ Migrations are append-only SQL files under `supabase/migrations/`. Each migratio
 ## Phase 2 migration
 
 `202611180001_identity_and_preferences.sql` creates `profiles` and `user_preferences`. The `on_auth_user_created` security-definer trigger atomically creates both rows with `ru`, `UTC`, and `sage` defaults. RLS allows only `profiles.id = auth.uid()` or `user_preferences.owner_id = auth.uid()` and includes ownership checks on writes. The SQL timezone checks are in `supabase/tests/timezone_validation.sql`. The file `supabase/tests/phase2_rls.sql` remains a manual protocol placeholder; two-user RLS isolation has not yet been automated or executed. Run database tests only locally or in isolated test infrastructure.
+
+## Phase 3 calendar migration
+
+`202611190001_calendar_and_tasks.sql` adds the first planning records: `categories`, `tasks`, `calendar_events` and `month_covers`. Every table is owner-scoped, timestamped, protected by RLS and uses the existing `set_updated_at` trigger function. Categories are unique case-insensitively per owner. Tasks and events reference categories through composite `(owner_id, category_id)` foreign keys, so a record cannot be associated with a category belonging to another user. The migration also enforces text, colour, status, interval, duration, completion-state and month-start constraints.
+
+`supabase/tests/phase3_calendar.sql` is a rollback-only local/isolated test: it creates two temporary auth users, validates category and calendar constraints, rejects a cross-owner category reference, and verifies select/update/delete/insert isolation. Run it only after applying migrations through a local or isolated Supabase instance; it is not a production script.
