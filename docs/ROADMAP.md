@@ -4,20 +4,20 @@
 
 **Outcome:** a buildable, responsive Next.js shell with design tokens, navigation, theme preference persistence and explicit empty states. It does not claim persistence for user data until Supabase exists.
 
-- Establish TypeScript, Tailwind, lint, unit-test and E2E-test configuration.
+- Establish TypeScript, Tailwind, lint, and unit-test configuration. End-to-end coverage is not implemented yet.
 - Implement shared layout and responsive navigation for all product areas.
 - Add the three starting token themes and local preview preference.
 - Document security boundaries, architecture, services and decisions.
 
-## Phase 2 — Identity and durable data (code complete; Supabase setup required)
+## Phase 2 — Identity and durable data (implementation complete; verification pending)
 
 **Outcome:** a user can authenticate and safely store their profile and preferences.
 
 - Add Supabase clients and auth screens.
 - Create initial migrations, indexes, constraints, RLS and storage policies.
-- Add typed repositories and integration tests for cross-user isolation.
+- Add typed repositories and a documented manual protocol for cross-user isolation.
 
-Before production use: apply the migration to local/isolated Supabase and execute the two-user RLS protocol.
+Still required before production use: configure an isolated Supabase project, apply the migration, and execute the two-user RLS protocol. The RLS protocol and SQL timezone checks are not automated in CI because they require an isolated Supabase database.
 
 ## Phase 3 — Calendar
 

@@ -29,7 +29,7 @@ Never commit `.env.local`. Never expose a Supabase Secret Key or service-role ke
 5. Apply migrations using Supabase CLI against local/isolated infrastructure first. Do not run destructive resets against a cloud project.
 6. Enable Email/password authentication. Production should retain email confirmation and configure SMTP before inviting real users.
 
-The application intentionally shows a setup state when public Supabase configuration is absent. RLS and SQL tests must run only against local or isolated test infrastructure, never production.
+The application intentionally shows a setup state when public Supabase configuration is absent. SQL timezone checks and the documented two-user RLS protocol must run only against local or isolated test infrastructure, never production; the RLS protocol is not yet automated in CI.
 
 ## Documentation
 

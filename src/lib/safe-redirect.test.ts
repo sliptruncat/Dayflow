@@ -8,6 +8,7 @@ describe("getSafeRedirectPath", () => {
   it("rejects external and protocol-relative URLs", () => {
     expect(getSafeRedirectPath("https://evil.example")).toBe("/");
     expect(getSafeRedirectPath("//evil.example")).toBe("/");
+    expect(getSafeRedirectPath("/\\evil.example")).toBe("/");
     expect(getSafeRedirectPath("/\\\\evil.example")).toBe("/");
   });
   it("rejects encoded slash and backslash ambiguity", () => {
