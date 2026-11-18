@@ -21,3 +21,27 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+
+  supabase-schema:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Start temporary Supabase stack
+        run: npx supabase start
+      - name: Apply migrations from scratch
+        run: npx supabase db reset --local
+      - name: Run Phase 3 schema and RLS test
+        shell: bash
+        run: |
+          set -euo pipefail
+          db_container="$(docker ps --format '{{.Names}}' | grep '^supabase_db_' | head -n 1)"
+          test -n "$db_container"
+          docker exec -i "$db_container" psql -U postgres -d postgres -v ON_ERROR_STOP=1 < supabase/tests/phase3_calendar.sql
+      - name: Stop temporary Supabase stack
+        if: always()
+        run: npx supabase stop --no-backup

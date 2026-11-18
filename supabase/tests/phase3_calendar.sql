@@ -56,6 +56,20 @@ begin
   end;
 
   begin
+    insert into public.tasks (owner_id, title, start_at, deadline_at)
+    values (owner_a, 'Invalid deadline', now(), now() - interval '1 minute');
+    raise exception 'Expected task deadline constraint violation';
+  exception when check_violation then null;
+  end;
+
+  begin
+    insert into public.tasks (owner_id, title, status)
+    values (owner_a, 'Invalid completion state', 'completed');
+    raise exception 'Expected task completion-state constraint violation';
+  exception when check_violation then null;
+  end;
+
+  begin
     insert into public.month_covers (owner_id, month_start) values (owner_a, date '2026-11-02');
     raise exception 'Expected month-start constraint violation';
   exception when check_violation then null;
@@ -106,13 +120,25 @@ begin
     raise exception 'RLS exposed another user''s month cover';
   end if;
 
-  update public.tasks set title = 'Cross-owner write' where id = task_a and owner_id = owner_b;
+  update public.categories set name = 'Cross-owner write' where id = category_b;
+  get diagnostics cross_owner_rows = row_count;
+  if cross_owner_rows <> 0 then
+    raise exception 'RLS updated another user''s category';
+  end if;
+
+  delete from public.categories where id = category_b;
+  get diagnostics cross_owner_rows = row_count;
+  if cross_owner_rows <> 0 then
+    raise exception 'RLS deleted another user''s category';
+  end if;
+
+  update public.tasks set title = 'Cross-owner write' where id = task_b;
   get diagnostics cross_owner_rows = row_count;
   if cross_owner_rows <> 0 then
     raise exception 'RLS updated another user''s task';
   end if;
 
-  delete from public.tasks where id = task_a and owner_id = owner_b;
+  delete from public.tasks where id = task_b;
   get diagnostics cross_owner_rows = row_count;
   if cross_owner_rows <> 0 then
     raise exception 'RLS deleted another user''s task';
@@ -122,6 +148,18 @@ begin
   get diagnostics cross_owner_rows = row_count;
   if cross_owner_rows <> 0 then
     raise exception 'RLS updated another user''s event';
+  end if;
+
+  delete from public.calendar_events where id = event_b;
+  get diagnostics cross_owner_rows = row_count;
+  if cross_owner_rows <> 0 then
+    raise exception 'RLS deleted another user''s event';
+  end if;
+
+  update public.month_covers set theme_id = 'griotte' where id = cover_b;
+  get diagnostics cross_owner_rows = row_count;
+  if cross_owner_rows <> 0 then
+    raise exception 'RLS updated another user''s month cover';
   end if;
 
   delete from public.month_covers where id = cover_b;
