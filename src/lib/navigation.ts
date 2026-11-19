@@ -1,19 +1,17 @@
-export type AppSection =
-  | "dashboard" | "calendar" | "tasks" | "inbox" | "assistant" | "projects"
-  | "finance" | "contacts" | "health" | "analytics" | "settings";
-
+export type AppSection = "dashboard" | "calendar" | "tasks" | "inbox" | "assistant" | "projects" | "finance" | "contacts" | "health" | "analytics" | "settings" | "focus" | "reminders";
 export type NavigationItem = { slug: AppSection; label: string; href: string; description: string };
-
 export const navigationItems: NavigationItem[] = [
-  { slug: "dashboard", label: "Today", href: "/", description: "A calm overview of your day." },
-  { slug: "calendar", label: "Calendar", href: "/calendar", description: "Plan days and see commitments in context." },
-  { slug: "tasks", label: "Tasks", href: "/tasks", description: "Capture, organize, and complete meaningful work." },
-  { slug: "inbox", label: "Inbox", href: "/inbox", description: "Keep unprocessed thoughts safe until you are ready." },
-  { slug: "assistant", label: "AI assistant", href: "/assistant", description: "Review proposals before any change is made." },
-  { slug: "projects", label: "Projects", href: "/projects", description: "Connect related work, people, and outcomes." },
-  { slug: "finance", label: "Finance", href: "/finance", description: "Track personal and project finances deliberately." },
-  { slug: "contacts", label: "Contacts", href: "/contacts", description: "Remember people and the context that matters." },
-  { slug: "health", label: "Health", href: "/health", description: "View health data only after an authorized connection." },
-  { slug: "analytics", label: "Analytics", href: "/analytics", description: "Understand patterns from your actual history." },
-  { slug: "settings", label: "Settings", href: "/settings", description: "Choose how DAYFLOW feels and behaves." },
+  { slug: "dashboard", label: "Сегодня", href: "/", description: "Спокойный обзор вашего дня." },
+  { slug: "calendar", label: "Календарь", href: "/calendar", description: "Планируйте дни и смотрите на обязательства целиком." },
+  { slug: "tasks", label: "Задачи", href: "/tasks", description: "Собирайте, организуйте и завершайте важные дела." },
+  { slug: "focus", label: "Фокус", href: "/focus", description: "Выделите время для одной важной задачи." },
+  { slug: "inbox", label: "Входящие", href: "/inbox", description: "Сохраняйте мысли, чтобы разобрать их позже." },
+  { slug: "reminders", label: "Напоминания", href: "/reminders", description: "Выбирайте, когда задача должна снова привлечь ваше внимание." },
+  { slug: "assistant", label: "Помощник", href: "/assistant", description: "Помощь в планировании с вашим подтверждением действий." },
+  { slug: "projects", label: "Цели", href: "/goals", description: "Двигайтесь к важным результатам небольшими шагами." },
+  { slug: "finance", label: "Финансы", href: "/finance", description: "Управляйте личными и проектными финансами." },
+  { slug: "contacts", label: "Контакты", href: "/contacts", description: "Храните важные контакты и контекст общения." },
+  { slug: "health", label: "Здоровье", href: "/health", description: "Подключайте данные о здоровье только с разрешения." },
+  { slug: "analytics", label: "Аналитика", href: "/analytics", description: "Изучайте закономерности на основе своей истории." },
+  { slug: "settings", label: "Настройки", href: "/settings", description: "Настраивайте внешний вид и поведение DAYFLOW." },
 ];

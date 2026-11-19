@@ -1,60 +1,40 @@
 # DAYFLOW
 
-AI-powered life planner for calendar, tasks, time tracking, reminders, personal analytics, and everyday planning.
+DAYFLOW is a personal planning workspace built with Next.js, React, TypeScript and Supabase. Each account has private tasks, events, notes, goals and progress. The application uses Supabase Row Level Security as a second ownership boundary in addition to server-side session checks.
 
-## Project status
+## Current implementation
 
-Foundation is in progress. The project now contains a buildable, responsive application shell and documentation for the durable MVP. Authenticated user data is not implemented yet, so the shell intentionally contains no sample personal records.
+- Supabase authentication and user preferences.
+- Personal tasks, categories, subtasks, events and calendar views.
+- Focus sessions, XP progression, companion stages and achievements.
+- Inbox capture with processing and archive states.
+- Goals with target dates and editable progress.
+- Task reminder scheduling records and reminder management API.
+- Factual analytics based on saved tasks, focus sessions, goals and reminders.
 
-## Product brief
+## Requirements
 
-See [docs/PRODUCT_BRIEF.md](docs/PRODUCT_BRIEF.md) for the product vision, feature scope, visual direction, architecture proposal, MVP sequence, and initial acceptance criteria.
+- Node.js 20+
+- A Supabase project
 
-## Development approach
+## Local setup
 
-The first milestone is a web application that validates the core workflow:
+1. Install dependencies: `npm ci`
+2. Copy `.env.example` to `.env.local`.
+3. Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` in `.env.local`.
+4. Start the development server: `npm run dev`.
 
-1. Create and edit a task.
-2. Place it on a calendar.
-3. Mark it complete.
-4. Track time spent.
-5. Preserve state after reload.
+## Database migrations
 
-The proposed stack is Next.js, React, TypeScript, and Supabase. The detailed implementation choices will be recorded as the architecture is established.
+Migrations are append-only and must be applied in order in an isolated or explicitly approved Supabase project. Do not use `supabase db reset` against a project containing user data. Migration `202611190005_inbox_goals_reminders.sql` adds the planner extension tables. The migration is included in the repository but is not assumed to be applied to any remote project.
 
-## Local development
+## Verification
 
-1. Copy `.env.example` to `.env.local` and fill only the services needed for the phase you are working on. Never commit it.
-2. Install dependencies with `npm install`.
-3. Run `npm run dev` and open `http://localhost:3000`.
-4. Before a change is handed off, run `npm run typecheck`, `npm run lint`, `npm run test`, and `npm run build`.
+Run `npm run lint`, `npm run typecheck`, and `npm test`. SQL isolation tests in `supabase/tests` require an isolated Supabase database. Production readiness additionally requires end-to-end tests, reminder delivery infrastructure, deployment environment configuration and a reviewed migration rollout.
 
-The Foundation theme picker is deliberately a local, non-sensitive preview. It will be synced to `user_preferences` after Phase 2 authentication exists.
+## Security notes
 
-## Supabase setup (Phase 2)
-
-1. Create a Supabase project or run one locally with the [Supabase CLI](https://supabase.com/docs/guides/local-development).
-2. Put its **Project URL** and browser-safe **anon/publishable key** in `.env.local` as `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`. Never commit them; never use a service-role key in the browser.
-3. Apply migrations using `supabase db push` for a linked development project, or `supabase db reset` locally.
-4. Under **Authentication → URL Configuration**, add `http://localhost:3000/auth/callback` and every deployed `<origin>/auth/callback`; these URLs also cover password recovery.
-5. Enable Email/password authentication. Production should retain email confirmation and configure SMTP before inviting real users.
-
-Until those public variables exist, the app deliberately shows a setup state and simulates no login or user data. Run the SQL RLS protocol only against local or isolated test infrastructure, never production.
-
-## Documentation
-
-- [Product brief](docs/PRODUCT_BRIEF.md)
-- [Technical specification](docs/TECHNICAL_SPEC.md)
-- [Architecture](docs/ARCHITECTURE.md)
-- [Database plan](docs/DATABASE.md)
-- [Roadmap](docs/ROADMAP.md)
-- [Architecture decisions](docs/DECISIONS.md)
-
-## Repository structure
-
-```
-src/                 application routes, components and feature modules
-docs/                product, architecture and delivery documentation
-supabase/            migrations (added in Phase 2)
-tests/               integration and E2E tests (expanded per phase)
-```
+- Never commit `.env.local`, Supabase credentials or `supabase/.temp`.
+- User ownership is derived from the authenticated Supabase session, never from request payloads.
+- All new personal tables enable RLS and restrict access to `auth.uid()`.
+- Reminder records are stored durably; delivery to browser, email or push channels requires a separately authorized worker and explicit notification permission.

@@ -27,6 +27,17 @@ The web application is the first implementation target. Native integrations that
 - Month images can be uploaded by the user or generated from a prompt.
 - Customizable themes, including per-month themes.
 
+### Sharing and collaboration
+- Share one calendar or a workspace of calendars with authenticated users by email.
+- Roles are owner (calendar and member control), editor (shared task/event creation and editing), and viewer (read-only).
+- Each calendar has one immutable resource owner; workspace ownership never grants ownership of another user's personal calendar. Ownership transfer and last-owner removal use an explicit confirmed flow.
+- Invitations use a one-time token, verified confirmed email and server-side acceptance. Pending invite revocation and active-member removal are separate actions.
+- Private records remain private until explicitly moved or copied into a shared calendar.
+- Workspace membership reaches only calendars explicitly attached to that workspace; personal calendars remain private. Editors may soft-delete shared tasks/events, while owners can restore them.
+- Shared tasks can later have assignees, responsible participants and comments for collaborative planning.
+- Account deletion preserves shared history with anonymized authors where lawful; targeted content erasure and the 24-month access-audit baseline remain subject to legal confirmation before production.
+- Family, friends and work are workspace types with the same explicit permission model, not implicit access to a user's private life.
+
 ### Tasks and projects
 A task can contain:
 - Title and description.
@@ -139,13 +150,13 @@ The application database should remain the source of truth. External calendar sy
 1. Repository foundation, application shell, and design system.
 2. Authentication and database model.
 3. Calendar views and task management.
-4. Task completion, subtasks, and persistence.
-5. AI task capture from text, voice, and screenshots.
-6. Time tracking.
-7. Notifications and check-ins.
-8. Calendar and health integrations.
-9. Gamification and analytics.
-10. Mobile packaging and release preparation.
+4. Explicit calendar/workspace sharing and collaboration permissions.
+5. Task completion, subtasks, and persistence.
+6. AI task capture from text, voice, and screenshots.
+7. Time tracking.
+8. Notifications and check-ins.
+9. Calendar and health integrations.
+10. Gamification, analytics and mobile release preparation.
 
 The first milestone should validate the core web workflow: create a task, place it on a calendar, complete it, track time, and retain all state after reload.
 

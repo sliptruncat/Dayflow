@@ -1,0 +1,3 @@
+import { describe, expect, it } from "vitest";
+import { levelForXp, stageForXp, xpToNextLevel } from "./gamification";
+describe("gamification progression", () => { it("has deterministic level and companion thresholds", () => { expect(levelForXp(0)).toBe(1); expect(levelForXp(299)).toBe(3); expect(stageForXp(99)).toBe("egg"); expect(stageForXp(100)).toBe("hatchling"); expect(stageForXp(400)).toBe("juvenile"); expect(stageForXp(1000)).toBe("adult"); }); it("calculates next-level remainder without negative progress", () => { expect(xpToNextLevel(-1)).toBe(100); expect(xpToNextLevel(20)).toBe(80); expect(xpToNextLevel(100)).toBe(100); }); });

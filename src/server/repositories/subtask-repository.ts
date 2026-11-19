@@ -1,0 +1,8 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/database";
+import type { SubtaskCreate, SubtaskUpdate } from "@/lib/validation/subtasks";
+type Row = Database["public"]["Tables"]["task_subtasks"]["Row"];
+export async function listSubtasks(client: SupabaseClient<Database>, ownerId: string, taskIds?: string[]) { let query = client.from("task_subtasks").select("*").eq("owner_id", ownerId).order("position").order("created_at"); if (taskIds?.length) query = query.in("task_id", taskIds); const { data, error } = await query; if (error) throw new Error("Не удалось загрузить подзадачи."); return data; }
+export async function createSubtask(client: SupabaseClient<Database>, ownerId: string, taskId: string, input: SubtaskCreate): Promise<Row> { const { data, error } = await client.from("task_subtasks").insert({ owner_id: ownerId, task_id: taskId, ...input, completed_at: null }).select().single(); if (error) throw new Error("Не удалось создать подзадачу."); return data; }
+export async function updateSubtask(client: SupabaseClient<Database>, ownerId: string, taskId: string, subtaskId: string, input: SubtaskUpdate): Promise<Row> { const { data, error } = await client.from("task_subtasks").update(input).eq("id", subtaskId).eq("task_id", taskId).eq("owner_id", ownerId).select().maybeSingle(); if (error || !data) throw new Error("Подзадача не найдена."); return data; }
+export async function deleteSubtask(client: SupabaseClient<Database>, ownerId: string, taskId: string, subtaskId: string) { const { data, error } = await client.from("task_subtasks").delete().eq("id", subtaskId).eq("task_id", taskId).eq("owner_id", ownerId).select("id").maybeSingle(); if (error || !data) throw new Error("Подзадача не найдена."); }

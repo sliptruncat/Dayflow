@@ -44,7 +44,7 @@ Email/password sign-up, sign-in, sign-out, verification callback and password re
 
 | Service | Required for | Variables / setup |
 | --- | --- | --- |
-| Supabase | auth, database, storage | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, server service-role key |
+| Supabase | auth, database, storage | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, server service-role key |
 | OpenAI | AI capture/planning, transcription, vision | server-only `OPENAI_API_KEY`; usage limits and audit logs |
 | Google OAuth/Calendar | optional calendar sync | OAuth client, redirect URI, encrypted refresh-token handling |
 | Web Push | supported web reminders | VAPID key pair, service worker, browser permission |
