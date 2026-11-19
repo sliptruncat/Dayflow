@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { isThemeId, themeStorageKey, themes, type ThemeId } from "@/lib/themes";
+import { themeStorageKey, themes, type ThemeId } from "@/lib/themes";
 import { ThemePicker } from "@/components/theme-picker";
 
 export function ThemeSettings({ initialTheme, isAuthenticated }: { initialTheme: ThemeId; isAuthenticated: boolean }) {
