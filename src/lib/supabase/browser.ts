@@ -12,7 +12,7 @@ export function getBrowserSupabaseClient(): SupabaseClient<Database> | null {
   if (!environment.configured) return null;
   client ??= createBrowserClient<Database>(
     environment.values.NEXT_PUBLIC_SUPABASE_URL,
-    environment.values.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    environment.values.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
   );
   return client;
 }

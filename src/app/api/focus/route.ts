@@ -1,0 +1,5 @@
+import { NextResponse } from "next/server";
+import { getServerSupabaseClient } from "@/lib/supabase/server";
+import { focusCreateSchema } from "@/lib/validation/focus";
+import { createFocusSession } from "@/server/repositories/progress-repository";
+export async function POST(request: Request) { const client = await getServerSupabaseClient(); if (!client) return NextResponse.json({ error: "Supabase не настроен." }, { status: 503 }); const { data: { user } } = await client.auth.getUser(); if (!user) return NextResponse.json({ error: "Требуется вход." }, { status: 401 }); const input = focusCreateSchema.safeParse(await request.json().catch(() => null)); if (!input.success) return NextResponse.json({ error: input.error.issues[0]?.message ?? "Некорректная сессия." }, { status: 400 }); try { return NextResponse.json({ session: await createFocusSession(client, user.id, input.data) }, { status: 201 }); } catch (error) { return NextResponse.json({ error: error instanceof Error ? error.message : "Не удалось начать сессию." }, { status: 400 }); } }

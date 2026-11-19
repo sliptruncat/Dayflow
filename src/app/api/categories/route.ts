@@ -1,0 +1,5 @@
+import { NextResponse } from "next/server";
+import { getServerSupabaseClient } from "@/lib/supabase/server";
+import { categoryCreateSchema } from "@/lib/validation/categories";
+import { createCategory } from "@/server/repositories/category-repository";
+export async function POST(request: Request) { const client = await getServerSupabaseClient(); if (!client) return NextResponse.json({ error: "Supabase не настроен." }, { status: 503 }); const { data: { user } } = await client.auth.getUser(); if (!user) return NextResponse.json({ error: "Требуется вход." }, { status: 401 }); const input = categoryCreateSchema.safeParse(await request.json().catch(() => null)); if (!input.success) return NextResponse.json({ error: input.error.issues[0]?.message }, { status: 400 }); try { return NextResponse.json({ category: await createCategory(client, user.id, input.data) }, { status: 201 }); } catch (error) { return NextResponse.json({ error: error instanceof Error ? error.message : "Не удалось создать категорию." }, { status: 409 }); } }

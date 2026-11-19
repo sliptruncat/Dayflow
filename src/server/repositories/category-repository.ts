@@ -1,0 +1,7 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/database";
+import type { CategoryCreate, CategoryUpdate } from "@/lib/validation/categories";
+export async function listCategories(client: SupabaseClient<Database>, ownerId: string) { const { data, error } = await client.from("categories").select("*").eq("owner_id", ownerId).order("name"); if (error) throw new Error("Не удалось загрузить категории."); return data; }
+export async function createCategory(client: SupabaseClient<Database>, ownerId: string, input: CategoryCreate) { const { data, error } = await client.from("categories").insert({ owner_id: ownerId, ...input }).select().single(); if (error) throw new Error("Не удалось создать категорию."); return data; }
+export async function updateCategory(client: SupabaseClient<Database>, ownerId: string, id: string, input: CategoryUpdate) { const { data, error } = await client.from("categories").update(input).eq("id", id).eq("owner_id", ownerId).select().maybeSingle(); if (error || !data) throw new Error("Категория не найдена или имя уже занято."); return data; }
+export async function deleteCategory(client: SupabaseClient<Database>, ownerId: string, id: string) { const { data, error } = await client.from("categories").delete().eq("id", id).eq("owner_id", ownerId).select("id").maybeSingle(); if (error) throw new Error("Категорию нельзя удалить, пока она назначена задачам или событиям."); if (!data) throw new Error("Категория не найдена."); }

@@ -1,13 +1,11 @@
 import type { NavigationItem } from "@/lib/navigation";
-
-const readiness: Partial<Record<string, string>> = {
-  calendar: "Calendar views arrive after authenticated task persistence is in place.",
-  tasks: "Task creation and editing are the next durable workflow after authentication.",
-  inbox: "Inbox will safely retain raw notes, voice captures, and screenshots.",
-  assistant: "The assistant will prepare structured proposals; it will not make hidden changes.",
-  settings: "Theme preview is available now; account-synced preferences arrive with Supabase.",
+const copy: Record<string, { title: string; text: string }> = {
+  finance: { title: "Финансовый раздел готовится", text: "Здесь появятся бюджеты, регулярные платежи и финансовые цели. Сейчас этот раздел ещё не подключён к базе данных." },
+  contacts: { title: "Контакты появятся здесь", text: "Раздел для людей, важных дат и заметок о взаимодействиях. Функциональность ещё в разработке." },
+  health: { title: "Личное пространство здоровья", text: "Подключение источников здоровья будет отдельным добровольным шагом. Пока интеграции не активированы." },
+  settings: { title: "Настройки пространства", text: "Выбор цветовой темы уже доступен в боковой панели. Дополнительные настройки аккаунта будут добавлены отдельно." },
 };
-
 export function SectionPlaceholder({ section }: { section: NavigationItem }) {
-  return <section className="page-stack"><div className="hero"><p className="eyebrow">DAYFLOW / {section.label.toUpperCase()}</p><h1>{section.label}</h1><p>{section.description}</p></div><div className="empty-panel"><span className="empty-orb">◌</span><div><h2>Ready for its data contract</h2><p>{readiness[section.slug] ?? "This module is planned after the core task, calendar, and time-tracking foundations are durable."}</p><p className="muted">This is an intentional empty state, not sample data.</p></div></div></section>;
+  const content = copy[section.slug] ?? { title: "Раздел в разработке", text: "Этот раздел пока не подключён. Основные рабочие инструменты находятся в календаре, задачах, фокусе, входящих, целях и напоминаниях." };
+  return <section className="page-stack"><div className="hero"><p className="eyebrow">DAYFLOW / ЛИЧНОЕ ПРОСТРАНСТВО</p><h1>{section.label}</h1><p>{section.description}</p></div><div className="empty-panel"><span className="empty-orb">◌</span><div><h2>{content.title}</h2><p>{content.text}</p></div></div></section>;
 }
