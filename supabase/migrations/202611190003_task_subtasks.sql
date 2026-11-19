@@ -1,4 +1,6 @@
 -- DAYFLOW Planner: one-level, owner-scoped subtasks. Apply only through Supabase CLI.
+create unique index if not exists tasks_owner_id_id_key
+  on public.tasks (owner_id, id);
 create table public.task_subtasks (
   id uuid primary key default gen_random_uuid(),
   owner_id uuid not null references auth.users(id) on delete cascade,
