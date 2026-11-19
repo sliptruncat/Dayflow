@@ -79,7 +79,7 @@ export function VoiceInput({
       }
       if (finalText.trim()) {
         const previous = latestValue.current;
-        const separator = previous && !/[\\s]$/.test(previous) ? " " : "";
+        const separator = previous && !/\s$/.test(previous) ? " " : "";
         const next = previous + separator + finalText.trim();
         latestValue.current = next;
         onChange(next);
