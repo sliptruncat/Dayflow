@@ -110,7 +110,7 @@ export function VoiceInput({
 
   return (
     <div className="voice-input">
-      <button type="button" className={listening ? "voice-input-button voice-input-button--active" : "voice-input-button"} onClick={toggle} aria-pressed={listening}>
+      <button type="button" className={listening ? "voice-input-button voice-input-button--active" : "voice-input-button"} onClick={toggle} aria-label={label} aria-pressed={listening}>
         <span aria-hidden="true">{listening ? "■" : "🎙"}</span>
         {listening ? "Остановить запись" : "Надиктовать"}
       </button>
