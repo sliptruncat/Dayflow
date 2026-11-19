@@ -23,6 +23,13 @@ export function AppShell({ children, context, activeSection }: AppShellProps) {
   }, [context.user]);
 
   useEffect(() => {
+    const storedHue = Number(window.localStorage.getItem("dayflow.background-hue"));
+    if (Number.isFinite(storedHue) && storedHue >= 0 && storedHue <= 360) {
+      document.documentElement.style.setProperty("--personal-hue", String(storedHue));
+    }
+  }, []);
+
+  useEffect(() => {
     document.documentElement.dataset.theme = theme;
     if (!context.user) window.localStorage.setItem(themeStorageKey, theme);
   }, [context.user, theme]);
