@@ -8,7 +8,13 @@ export async function listInbox(client: SupabaseClient<Database>, ownerId: strin
 }
 export async function createInboxItem(client: SupabaseClient<Database>, ownerId: string, title: string, body: string | null) {
   const { data, error } = await client.from("inbox_items").insert({ owner_id: ownerId, title, body }).select().single();
-  if (error) throw new Error("Не удалось сохранить заметку.");
+  if (error) {
+    console.error("[inbox] Failed to create inbox item:", error);
+    if (error.code === "42P01" || error.code === "42703") {
+      throw new Error("Таблица «Входящие» ещё не создана в базе данных. Нужно применить миграцию 202611190005_inbox_goals_reminders.sql в Supabase.");
+    }
+    throw new Error("Не удалось сохранить заметку. Проверьте подключение к базе и попробуйте ещё раз.");
+  }
   return data;
 }
 export async function updateInboxItem(client: SupabaseClient<Database>, ownerId: string, id: string, input: Database["public"]["Tables"]["inbox_items"]["Update"]) {
