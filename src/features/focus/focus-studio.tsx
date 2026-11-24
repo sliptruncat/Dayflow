@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { focusChannelName, focusStorageKey, mergeFocusSessions, readFocusSyncSession } from "@/lib/focus-sync";
+import { focusChannelName, focusStorageKey, focusSyncEventName, mergeFocusSessions, readFocusSyncSession } from "@/lib/focus-sync";
 import type { Database } from "@/types/database";
 
 type Task = Database["public"]["Tables"]["tasks"]["Row"];
@@ -86,6 +86,7 @@ export function FocusStudio({
   function publishSession(session: Session) {
     if (!ownerId || session.owner_id !== ownerId) return;
     const message = { type: "session-updated", session, nonce: `${Date.now()}-${Math.random()}` };
+    window.dispatchEvent(new CustomEvent(focusSyncEventName, { detail: message }));
     if (channelRef.current) {
       channelRef.current.postMessage(message);
       return;
