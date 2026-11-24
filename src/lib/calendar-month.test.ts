@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { dateKeyInTimeZone, eventsByDate, monthGrid, shiftMonth, tasksByDeadline, weekKeys, yearMonths, zonedDateTimeToIso } from "./calendar-month";
+import { scheduleHoursForDate } from "./calendar-schedule";
 
 describe("month calendar", () => {
   it("starts Monday grid correctly and includes trailing month days", () => {
@@ -34,5 +35,24 @@ describe("month calendar", () => {
     const events = [{ starts_at: "2026-11-01T21:00:00.000Z", ends_at: "2026-11-02T02:00:00.000Z", is_all_day: false }, { starts_at: "2026-11-03T00:00:00.000Z", ends_at: "2026-11-04T00:00:00.000Z", is_all_day: true }];
     const grouped = eventsByDate(events, "UTC");
     expect(grouped["2026-11-01"]).toHaveLength(1); expect(grouped["2026-11-02"]).toHaveLength(1); expect(grouped["2026-11-03"]).toHaveLength(1); expect(grouped["2026-11-04"]).toBeUndefined();
+  });
+
+  it("places timed events in the selected timezone and keeps multi-hour overlaps visible", () => {
+    const events = [
+      { id: "a", title: "Workshop", starts_at: "2026-11-24T08:15:00.000Z", ends_at: "2026-11-24T10:15:00.000Z", is_all_day: false },
+      { id: "b", title: "Call", starts_at: "2026-11-24T09:00:00.000Z", ends_at: "2026-11-24T09:30:00.000Z", is_all_day: false },
+    ];
+    const slots = scheduleHoursForDate("2026-11-24", "Europe/Berlin", events);
+    const nine = slots.find((slot) => slot.label === "09:00");
+    const ten = slots.find((slot) => slot.label === "10:00");
+    expect(nine?.events.map((item) => item.event.id)).toEqual(["a", "b"]);
+    expect(nine?.events[0].startsHere).toBe(true);
+    expect(ten?.events.map((item) => item.event.id)).toEqual(["a"]);
+    expect(ten?.events[0].startsHere).toBe(false);
+  });
+
+  it("uses 23 and 25 real-hour slots on daylight-saving transition days", () => {
+    expect(scheduleHoursForDate("2026-03-29", "Europe/Berlin", []).length).toBe(23);
+    expect(scheduleHoursForDate("2026-10-25", "Europe/Berlin", []).length).toBe(25);
   });
 });
