@@ -1,6 +1,12 @@
 import { z } from "zod";
 
 const optionalText = (max: number) => z.string().trim().max(max).transform((value) => value || null).nullable().optional();
+const isoDate = z.string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/)
+  .refine((value) => {
+    const parsed = new Date(`${value}T00:00:00.000Z`);
+    return Number.isFinite(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
+  }, "Укажите корректную дату.");
 
 export const financeTransactionSchema = z.object({
   title: z.string().trim().min(1).max(180),
@@ -8,7 +14,7 @@ export const financeTransactionSchema = z.object({
   currency: z.string().regex(/^[A-Z]{3}$/).default("RUB"),
   kind: z.enum(["income", "expense"]),
   category_id: z.string().uuid().nullable().optional(),
-  occurred_on: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  occurred_on: isoDate.optional(),
   is_recurring: z.boolean().default(false),
   recurrence: z.enum(["weekly", "monthly", "yearly"]).nullable().optional(),
   notes: optionalText(2000),
@@ -20,12 +26,12 @@ export const contactSchema = z.object({
   role: optionalText(120),
   email: z.preprocess((value) => value === "" ? null : value, z.string().trim().email().max(254).nullable().optional()),
   phone: optionalText(40),
-  birthday: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+  birthday: isoDate.nullable().optional(),
   notes: optionalText(5000),
 }).strict();
 
 export const healthEntryFieldsSchema = z.object({
-  entry_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  entry_date: isoDate.optional(),
   sleep_minutes: z.number().int().min(0).max(1440).nullable().optional(),
   mood: z.number().int().min(1).max(5).nullable().optional(),
   energy: z.number().int().min(1).max(5).nullable().optional(),
@@ -45,7 +51,7 @@ export const financeBudgetSchema = z.object({
   amount: z.number().positive().max(999999999999),
   currency: z.string().regex(/^[A-Z]{3}$/).default("RUB"),
   period: z.enum(["weekly", "monthly", "yearly"]).default("monthly"),
-  starts_on: z.string().regex(/^\\d{4}-\\d{2}-\\d{2}$/).optional(),
+  starts_on: isoDate.optional(),
   category_id: z.string().uuid().nullable().optional(),
 }).strict();
 
