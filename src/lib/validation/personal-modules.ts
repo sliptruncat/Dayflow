@@ -24,10 +24,12 @@ export const contactSchema = z.object({
   notes: optionalText(5000),
 }).strict();
 
-export const healthEntrySchema = z.object({
+export const healthEntryFieldsSchema = z.object({
   entry_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   sleep_minutes: z.number().int().min(0).max(1440).nullable().optional(),
   mood: z.number().int().min(1).max(5).nullable().optional(),
   energy: z.number().int().min(1).max(5).nullable().optional(),
   notes: optionalText(3000),
-}).strict().refine((value) => value.sleep_minutes != null || value.mood != null || value.energy != null || value.notes != null, "Добавьте хотя бы один показатель.");
+}).strict();
+
+export const healthEntrySchema = healthEntryFieldsSchema.refine((value) => value.sleep_minutes != null || value.mood != null || value.energy != null || value.notes != null, "Добавьте хотя бы один показатель.");
