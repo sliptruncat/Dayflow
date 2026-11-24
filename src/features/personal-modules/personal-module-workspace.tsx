@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { calculateBudgetUsage, type BudgetPeriod, type TransactionForUsage } from "@/lib/finance-budget";
 import { dateKeyInTimeZone } from "@/lib/calendar-month";
+import { summarizeHealthEntries, type HealthTrendEntry } from "@/lib/health-trends";
 type ModuleKind = "finance" | "contacts" | "health";
 type Row = Record<string, string | number | boolean | null>;
 const endpoints: Record<ModuleKind, string> = { finance: "/api/finance/transactions", contacts: "/api/contacts", health: "/api/health/entries" };
@@ -155,6 +156,7 @@ export function PersonalModuleWorkspace({ kind, timeZone = "UTC" }: { kind: Modu
       </div>
     </div>
   </section>
+    {kind === "health" && <HealthTrendsPanel entries={rows as unknown as HealthTrendEntry[]} />}
     {kind === "finance" && <FinancePlanningPanel transactions={rows as unknown as FinanceTransaction[]} onCategoriesChange={setFinanceCategories} timeZone={timeZone} />}
     {kind === "contacts" && <ContactHistoryPanel contacts={rows.map(row => ({ id: String(row.id), full_name: String(row.full_name) }))} />}
   </>;
@@ -236,6 +238,43 @@ function FinancePlanningPanel({ transactions, onCategoriesChange, timeZone }: { 
       </form>
     </div>
     {(error || message) && <p className={error ? "form-message form-message--error" : "settings-save-message"} role={error ? "alert" : "status"}>{error || message}</p>}
+  </section>;
+}
+
+
+function HealthTrendsPanel({ entries }: { entries: HealthTrendEntry[] }) {
+  const summary = summarizeHealthEntries(entries);
+  const sleepAverage = summary.averageSleepMinutes === null
+    ? "—"
+    : `${(summary.averageSleepMinutes / 60).toLocaleString("ru-RU", { maximumFractionDigits: 1 })} ч`;
+  const moodAverage = summary.averageMood === null
+    ? "—"
+    : `${summary.averageMood.toLocaleString("ru-RU", { maximumFractionDigits: 1 })}/5`;
+  const energyAverage = summary.averageEnergy === null
+    ? "—"
+    : `${summary.averageEnergy.toLocaleString("ru-RU", { maximumFractionDigits: 1 })}/5`;
+
+  return <section className="personal-module-planning health-trends">
+    <div className="personal-module-list-heading"><div><p className="eyebrow">ПОСЛЕДНИЕ {summary.count} ЗАПИСЕЙ</p><h2>Динамика самочувствия</h2></div></div>
+    {summary.count === 0 ? <p className="personal-module-empty">Добавьте записи в дневник, чтобы увидеть динамику.</p> : <>
+      <div className="health-trend-summary">
+        <div><strong>{sleepAverage}</strong><span>средний сон</span></div>
+        <div><strong>{moodAverage}</strong><span>среднее настроение</span></div>
+        <div><strong>{energyAverage}</strong><span>средняя энергия</span></div>
+      </div>
+      <div className="health-trend-chart" role="img" aria-label="Продолжительность сна по последним записям">
+        {summary.recent.map(entry => {
+          const minutes = entry.sleep_minutes === null ? null : Number(entry.sleep_minutes);
+          const height = minutes === null ? 0 : Math.min(100, Math.max(0, minutes / 720 * 100));
+          return <div className="health-trend-column" key={entry.entry_date}>
+            <div className="health-trend-bar"><span style={{ height: `${height}%` }} /></div>
+            <strong>{minutes === null ? "—" : `${(minutes / 60).toLocaleString("ru-RU", { maximumFractionDigits: 1 })} ч`}</strong>
+            <time>{formatDateKey(entry.entry_date)}</time>
+          </div>;
+        })}
+      </div>
+      <p className="health-trend-note">Это сводка только по вашим записям, а не медицинская оценка или рекомендация.</p>
+    </>}
   </section>;
 }
 
