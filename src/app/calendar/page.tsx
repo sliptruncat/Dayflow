@@ -19,5 +19,5 @@ export default async function CalendarPage() {
   const subtasksResult = context.user && client && tasks.length > 0 ? await Promise.allSettled([listSubtasks(client, context.user.id, tasks.map((task) => task.id))]) : null;
   const subtasks = subtasksResult?.[0].status === "fulfilled" ? subtasksResult[0].value : [];
   const dataError = context.databaseError || results?.some((result) => result.status === "rejected") === true || subtasksResult?.[0].status === "rejected";
-  return <AppShell context={context} activeSection="calendar"><TaskWorkspace initialTasks={tasks} initialEvents={events} initialCategories={categories} initialSubtasks={subtasks} dataError={dataError} timeZone="Europe/Moscow" showMonth title="Мой календарь" subtitle="Создавайте дела и события, отмечайте выполненные и возвращайтесь к ним после перезагрузки." /></AppShell>;
+  return <AppShell context={context} activeSection="calendar"><TaskWorkspace initialTasks={tasks} initialEvents={events} initialCategories={categories} initialSubtasks={subtasks} dataError={dataError} timeZone={context.preferences?.timezone ?? "UTC"} showMonth title="Мой календарь" subtitle="Создавайте дела и события, отмечайте выполненные и возвращайтесь к ним после перезагрузки." /></AppShell>;
 }
