@@ -22,7 +22,7 @@ begin
   insert into public.finance_categories(owner_id,name,kind) values (owner_a,'Food','expense') returning id into category_a;
   insert into public.finance_transactions(owner_id,category_id,title,amount,kind) values (owner_a,category_a,'Groceries',42.50,'expense') returning id into transaction_a;
   insert into public.finance_budgets(owner_id,category_id,name,amount) values (owner_a,category_a,'Food budget',300) returning id into budget_a;
-  insert into public.contacts(owner_id,full_name) values (owner_a,'Private contact') returning id into contact_a;
+  insert into public.contacts(owner_id,full_name,next_follow_up_at) values (owner_a,'Private contact',current_date + 7) returning id into contact_a;
   insert into public.contact_interactions(owner_id,contact_id,summary) values (owner_a,contact_a,'Private interaction') returning id into interaction_a;
   insert into public.health_entries(owner_id,entry_date,mood) values (owner_a,current_date,4) returning id into health_a;
 
