@@ -271,3 +271,7 @@ p{ text-wrap:pretty }
 .personal-module-grid--secondary{margin-top:14px}
 .personal-module-chip-list{display:flex;gap:7px;flex-wrap:wrap}
 .personal-module-chip-list span{padding:6px 9px;border:1px solid var(--line);border-radius:999px;color:var(--ink-soft);font-size:11px}
+
+/* Finance budgets show current-period spending without mixing currencies. */
+.finance-budget-progress{height:7px;margin:8px 0 5px;border-radius:999px;background:var(--surface-muted);overflow:hidden}
+.finance-budget-progress span{display:block;height:100%;border-radius:inherit;background:var(--accent);transition:width .2s ease}
