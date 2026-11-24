@@ -139,3 +139,108 @@ export function PersonalModuleWorkspace({ kind }: { kind: ModuleKind }) {
     </div>
   </section>;
 }
+
+
+type FinanceCategory = { id: string; name: string; kind: "income" | "expense"; color: string };
+type FinanceBudget = { id: string; name: string; amount: number; currency: string; period: string; starts_on: string };
+function FinancePlanningPanel() {
+  const [categories, setCategories] = useState<FinanceCategory[]>([]);
+  const [budgets, setBudgets] = useState<FinanceBudget[]>([]);
+  const [categoryName, setCategoryName] = useState("");
+  const [categoryKind, setCategoryKind] = useState<"income" | "expense">("expense");
+  const [budgetName, setBudgetName] = useState("");
+  const [budgetAmount, setBudgetAmount] = useState("");
+  const [budgetCurrency, setBudgetCurrency] = useState("RUB");
+  const [budgetPeriod, setBudgetPeriod] = useState("monthly");
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
+  const load = useCallback(async () => {
+    try {
+      const [c, b] = await Promise.all([fetch("/api/finance/categories", { cache: "no-store" }), fetch("/api/finance/budgets", { cache: "no-store" })]);
+      const [cp, bp] = await Promise.all([c.json(), b.json()]);
+      if (!c.ok || !b.ok) throw new Error(cp.error ?? bp.error ?? "Не удалось загрузить планирование.");
+      setCategories(cp.categories ?? []); setBudgets(bp.budgets ?? []);
+    } catch (e) { setError(e instanceof Error ? e.message : "Ошибка загрузки."); }
+  }, []);
+  useEffect(() => { void load(); }, [load]);
+  async function addCategory(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault(); setBusy(true); setError(""); setMessage("");
+    try {
+      const r = await fetch("/api/finance/categories", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: categoryName, kind: categoryKind }) });
+      const p = await r.json(); if (!r.ok) throw new Error(p.error ?? "Не удалось сохранить категорию.");
+      setCategoryName(""); setMessage("Категория добавлена."); await load();
+    } catch (e) { setError(e instanceof Error ? e.message : "Ошибка сохранения."); } finally { setBusy(false); }
+  }
+  async function addBudget(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault(); setBusy(true); setError(""); setMessage("");
+    try {
+      const r = await fetch("/api/finance/budgets", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: budgetName, amount: Number(budgetAmount), currency: budgetCurrency, period: budgetPeriod }) });
+      const p = await r.json(); if (!r.ok) throw new Error(p.error ?? "Не удалось сохранить бюджет.");
+      setBudgetName(""); setBudgetAmount(""); setMessage("Бюджет добавлен."); await load();
+    } catch (e) { setError(e instanceof Error ? e.message : "Ошибка сохранения."); } finally { setBusy(false); }
+  }
+  return <section className="personal-module-planning">
+    <div className="personal-module-list-heading"><div><p className="eyebrow">ПЛАНИРОВАНИЕ</p><h2>Категории и бюджеты</h2></div></div>
+    <div className="personal-module-grid personal-module-grid--secondary">
+      <form className="personal-module-form" onSubmit={addCategory}>
+        <strong>Новая категория</strong>
+        <label>Название<input required maxLength={80} value={categoryName} onChange={e => setCategoryName(e.target.value)} placeholder="Например, продукты" /></label>
+        <label>Тип<select value={categoryKind} onChange={e => setCategoryKind(e.target.value as "income" | "expense")}><option value="expense">Расход</option><option value="income">Доход</option></select></label>
+        <button className="button button--accent" disabled={busy}>Добавить категорию</button>
+        <div className="personal-module-chip-list">{categories.map(c => <span key={c.id}>{c.name} · {c.kind === "income" ? "доход" : "расход"}</span>)}</div>
+      </form>
+      <form className="personal-module-form" onSubmit={addBudget}>
+        <strong>Новый бюджет</strong>
+        <label>Название<input required maxLength={100} value={budgetName} onChange={e => setBudgetName(e.target.value)} placeholder="Например, ежемесячные расходы" /></label>
+        <div className="personal-module-fields"><label>Сумма<input required type="number" min="0.01" step="0.01" value={budgetAmount} onChange={e => setBudgetAmount(e.target.value)} /></label><label>Валюта<select value={budgetCurrency} onChange={e => setBudgetCurrency(e.target.value)}><option>RUB</option><option>EUR</option><option>USD</option></select></label></div>
+        <label>Период<select value={budgetPeriod} onChange={e => setBudgetPeriod(e.target.value)}><option value="weekly">Неделя</option><option value="monthly">Месяц</option><option value="yearly">Год</option></select></label>
+        <button className="button button--accent" disabled={busy}>Создать бюджет</button>
+        <ul className="personal-module-items">{budgets.map(b => <li key={b.id}><strong>{b.name}</strong><span>{Number(b.amount).toLocaleString("ru-RU")} {b.currency}</span><small>{b.period === "weekly" ? "Неделя" : b.period === "yearly" ? "Год" : "Месяц"} · с {b.starts_on}</small></li>)}</ul>
+      </form>
+    </div>
+    {(error || message) && <p className={error ? "form-message form-message--error" : "settings-save-message"} role={error ? "alert" : "status"}>{error || message}</p>}
+  </section>;
+}
+
+type ContactRow = { id: string; full_name: string };
+type Interaction = { id: string; occurred_at: string; channel: string; summary: string };
+function ContactHistoryPanel({ contacts }: { contacts: ContactRow[] }) {
+  const [contactId, setContactId] = useState(contacts[0]?.id ?? "");
+  const [interactions, setInteractions] = useState<Interaction[]>([]);
+  const [channel, setChannel] = useState("note");
+  const [summary, setSummary] = useState("");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  useEffect(() => { if (!contacts.some(c => c.id === contactId)) setContactId(contacts[0]?.id ?? ""); }, [contacts, contactId]);
+  const load = useCallback(async () => {
+    if (!contactId) { setInteractions([]); return; }
+    try {
+      const r = await fetch(`/api/contacts/interactions?contact_id=${encodeURIComponent(contactId)}`, { cache: "no-store" });
+      const p = await r.json(); if (!r.ok) throw new Error(p.error ?? "Не удалось загрузить историю.");
+      setInteractions(p.interactions ?? []);
+    } catch (e) { setError(e instanceof Error ? e.message : "Ошибка загрузки."); }
+  }, [contactId]);
+  useEffect(() => { void load(); }, [load]);
+  async function add(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault(); setBusy(true); setError("");
+    try {
+      const r = await fetch("/api/contacts/interactions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contact_id: contactId, channel, summary }) });
+      const p = await r.json(); if (!r.ok) throw new Error(p.error ?? "Не удалось сохранить запись.");
+      setSummary(""); await load();
+    } catch (e) { setError(e instanceof Error ? e.message : "Ошибка сохранения."); } finally { setBusy(false); }
+  }
+  return <section className="personal-module-planning">
+    <div className="personal-module-list-heading"><div><p className="eyebrow">CRM</p><h2>История общения</h2></div></div>
+    {contacts.length === 0 ? <p className="personal-module-empty">Сначала добавьте контакт, чтобы вести историю общения.</p> : <div className="personal-module-grid personal-module-grid--secondary">
+      <form className="personal-module-form" onSubmit={add}>
+        <label>Контакт<select value={contactId} onChange={e => setContactId(e.target.value)}>{contacts.map(c => <option key={c.id} value={c.id}>{c.full_name}</option>)}</select></label>
+        <label>Тип взаимодействия<select value={channel} onChange={e => setChannel(e.target.value)}><option value="note">Заметка</option><option value="call">Звонок</option><option value="meeting">Встреча</option><option value="email">Email</option><option value="message">Сообщение</option></select></label>
+        <label>Что обсудили<textarea required maxLength={2000} value={summary} onChange={e => setSummary(e.target.value)} placeholder="Кратко зафиксируйте контекст" /></label>
+        <button className="button button--accent" disabled={busy || !contactId}>Добавить в историю</button>
+        {error && <p className="form-message form-message--error" role="alert">{error}</p>}
+      </form>
+      <div className="personal-module-list"><ul className="personal-module-items">{interactions.length === 0 ? <li><small>История пока пустая.</small></li> : interactions.map(i => <li key={i.id}><strong>{i.channel === "call" ? "Звонок" : i.channel === "meeting" ? "Встреча" : i.channel === "email" ? "Email" : i.channel === "message" ? "Сообщение" : "Заметка"}</strong><span>{new Date(i.occurred_at).toLocaleString("ru-RU")}</span><small>{i.summary}</small></li>)}</ul></div>
+    </div>}
+  </section>;
+}
