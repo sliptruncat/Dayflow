@@ -24,7 +24,7 @@ create table public.finance_transactions (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   constraint finance_transactions_category_owner_fkey foreign key (owner_id, category_id)
-    references public.finance_categories(owner_id, id) on delete set null
+    references public.finance_categories(owner_id, id) on delete set null (category_id)
 );
 create index finance_transactions_owner_date_idx on public.finance_transactions(owner_id, occurred_on desc);
 create table public.finance_budgets (
