@@ -40,6 +40,7 @@ export function PersonalModuleWorkspace({ kind, timeZone = "UTC" }: { kind: Modu
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [contactNotes, setContactNotes] = useState("");
+  const [followUpDate, setFollowUpDate] = useState("");
   const [entryDate, setEntryDate] = useState(() => localDateKey(timeZone));
   const [sleep, setSleep] = useState("");
   const [mood, setMood] = useState("");
@@ -61,7 +62,7 @@ export function PersonalModuleWorkspace({ kind, timeZone = "UTC" }: { kind: Modu
   function resetForm() {
     setEditingId(null); setTitle(""); setAmount(""); setMoneyKind("expense"); setCurrency("RUB"); setCategoryId("");
     setOccurredOn(localDateKey(timeZone)); setFullName(""); setCompany(""); setRole("");
-    setEmail(""); setPhone(""); setContactNotes(""); setEntryDate(localDateKey(timeZone));
+    setEmail(""); setPhone(""); setContactNotes(""); setFollowUpDate(""); setEntryDate(localDateKey(timeZone));
     setSleep(""); setMood(""); setEnergy(""); setNotes("");
   }
 
@@ -73,6 +74,7 @@ export function PersonalModuleWorkspace({ kind, timeZone = "UTC" }: { kind: Modu
     } else if (kind === "contacts") {
       setFullName(String(row.full_name ?? "")); setCompany(String(row.company ?? "")); setRole(String(row.role ?? ""));
       setEmail(String(row.email ?? "")); setPhone(String(row.phone ?? "")); setContactNotes(String(row.notes ?? ""));
+      setFollowUpDate(String(row.next_follow_up_at ?? ""));
     } else {
       setEntryDate(String(row.entry_date ?? "")); setSleep(row.sleep_minutes == null ? "" : String(row.sleep_minutes));
       setMood(row.mood == null ? "" : String(row.mood)); setEnergy(row.energy == null ? "" : String(row.energy));
@@ -96,7 +98,7 @@ export function PersonalModuleWorkspace({ kind, timeZone = "UTC" }: { kind: Modu
     event.preventDefault(); setSaving(true); setError(""); setMessage("");
     let body: Record<string, unknown>;
     if (kind === "finance") body = { title, amount: Number(amount), currency, kind: moneyKind, occurred_on: occurredOn, category_id: categoryId || null };
-    else if (kind === "contacts") body = { full_name: fullName, company, role, email, phone, notes: contactNotes };
+    else if (kind === "contacts") body = { full_name: fullName, company, role, email, phone, next_follow_up_at: followUpDate || null, notes: contactNotes };
     else body = { entry_date: entryDate, sleep_minutes: sleep === "" ? null : Number(sleep), mood: mood === "" ? null : Number(mood), energy: energy === "" ? null : Number(energy), notes };
     try {
       const response = await fetch(editingId ? `${endpoints[kind]}/${editingId}` : endpoints[kind], {
@@ -130,6 +132,7 @@ export function PersonalModuleWorkspace({ kind, timeZone = "UTC" }: { kind: Modu
           <label>Должность<input maxLength={120} value={role} onChange={e => setRole(e.target.value)} placeholder="Должность" /></label>
           <label>Email<input type="email" maxLength={254} value={email} onChange={e => setEmail(e.target.value)} placeholder="name@example.com" /></label>
           <label>Телефон<input type="tel" maxLength={40} value={phone} onChange={e => setPhone(e.target.value)} placeholder="+7 ..." /></label>
+          <label>Следующий контакт<input type="date" value={followUpDate} onChange={e => setFollowUpDate(e.target.value)} /></label>
           <label>Заметки<textarea maxLength={5000} value={contactNotes} onChange={e => setContactNotes(e.target.value)} placeholder="Контекст и важные детали" /></label>
         </>}
         {kind === "health" && <>
@@ -149,7 +152,7 @@ export function PersonalModuleWorkspace({ kind, timeZone = "UTC" }: { kind: Modu
         <div className="personal-module-list-heading"><div><p className="eyebrow">ВАША ИСТОРИЯ</p><h2>{kind === "health" ? "Дневник" : kind === "contacts" ? "Люди" : "Операции"}</h2></div><button className="text-button" type="button" onClick={() => void load()}>Обновить</button></div>
         {loading ? <p className="personal-module-empty">Загружаем записи…</p> : rows.length === 0 ? <p className="personal-module-empty">Пока записей нет. Добавьте первую — она появится здесь.</p> : <ul className="personal-module-items">{rows.map(row => <li key={String(row.id)}>
           {kind === "finance" && <><strong>{String(row.title)}</strong><span>{String(row.kind) === "income" ? "+" : "−"}{Number(row.amount).toLocaleString("ru-RU")} {String(row.currency)}</span><small>{String(row.occurred_on)} · {financeCategories.find(category => category.id === row.category_id)?.name ?? "Без категории"}</small></>}
-          {kind === "contacts" && <><strong>{String(row.full_name)}</strong><span>{[row.company, row.role].filter(Boolean).join(" · ") || "Контакт"}</span><small>{String(row.email ?? row.phone ?? "")}</small></>}
+          {kind === "contacts" && <><strong>{String(row.full_name)}</strong><span>{[row.company, row.role].filter(Boolean).join(" · ") || "Контакт"}</span><small>{String(row.email ?? row.phone ?? "")}</small><small className={row.next_follow_up_at && String(row.next_follow_up_at) < localDateKey(timeZone) ? "contact-follow-up contact-follow-up--overdue" : "contact-follow-up"}>{row.next_follow_up_at ? (String(row.next_follow_up_at) < localDateKey(timeZone) ? "Просрочен контакт · " : "Связаться до ") + formatDateKey(String(row.next_follow_up_at)) : "Следующий контакт не запланирован"}</small></>}
           {kind === "health" && <><strong>{String(row.entry_date)}</strong><span>{row.sleep_minutes == null ? "Сон не указан" : "Сон: " + Math.floor(Number(row.sleep_minutes)/60) + " ч " + (Number(row.sleep_minutes)%60) + " мин"} · {row.mood == null ? "настроение —" : "настроение " + row.mood + "/5"} · {row.energy == null ? "энергия —" : "энергия " + row.energy + "/5"}</span><small>{String(row.notes ?? "")}</small></>}
           <div className="personal-module-row-actions"><button className="text-button" type="button" onClick={() => beginEdit(row)}>Изменить</button><button className="text-button personal-module-delete" type="button" onClick={() => void removeRow(String(row.id))}>Удалить</button></div>
         </li>)}</ul>}
