@@ -18,7 +18,7 @@ export const contactSchema = z.object({
   full_name: z.string().trim().min(1).max(160),
   company: optionalText(160),
   role: optionalText(120),
-  email: z.string().trim().email().max(254).nullable().optional(),
+  email: z.preprocess((value) => value === "" ? null : value, z.string().trim().email().max(254).nullable().optional()),
   phone: optionalText(40),
   birthday: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
   notes: optionalText(5000),
