@@ -1,11 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { mergeFocusSessions } from "@/lib/focus-sync";
 import type { Database } from "@/types/database";
 
 type Task = Database["public"]["Tables"]["tasks"]["Row"];
 type Session = Database["public"]["Tables"]["focus_sessions"]["Row"];
 type Progress = Database["public"]["Tables"]["user_progress"]["Row"] | null;
+
+const FOCUS_CHANNEL_PREFIX = "dayflow-focus-session";
+const FOCUS_STORAGE_PREFIX = "dayflow-focus-session-update";
 
 const stages = {
   egg: ["🥚", "Яйцо", "Ещё немного заботы — и он появится."],
@@ -21,16 +25,34 @@ function getElapsedSeconds(session: Session, now = Date.now()) {
   return Math.min(session.duration_seconds, saved + sinceStart);
 }
 
+function readSyncSession(value: unknown, ownerId: string): Session | null {
+  if (typeof value !== "object" || value === null) return null;
+  const message = value as Record<string, unknown>;
+  if (message.type !== "session-updated" || typeof message.session !== "object" || message.session === null) return null;
+  const session = message.session as Record<string, unknown>;
+  if (
+    typeof session.id !== "string" ||
+    session.owner_id !== ownerId ||
+    typeof session.started_at !== "string" ||
+    typeof session.duration_seconds !== "number" ||
+    typeof session.elapsed_seconds !== "number" ||
+    !["running", "paused", "completed", "cancelled"].includes(String(session.status))
+  ) return null;
+  return session as unknown as Session;
+}
+
 export function FocusStudio({
   initialProgress,
   initialSessions,
   tasks,
   achievements,
+  ownerId,
 }: {
   initialProgress: Progress;
   initialSessions: Session[];
   tasks: Task[];
   achievements: Database["public"]["Tables"]["user_achievements"]["Row"][];
+  ownerId: string;
 }) {
   const [progress, setProgress] = useState(initialProgress);
   const [sessions, setSessions] = useState(initialSessions);
@@ -41,8 +63,65 @@ export function FocusStudio({
   );
   const [elapsed, setElapsed] = useState(0);
   const [error, setError] = useState<string>();
+  const channelRef = useRef<BroadcastChannel | null>(null);
   const remaining = Math.max(0, (active?.duration_seconds ?? duration) - elapsed);
   const stage = stages[progress?.companion_stage ?? "egg"];
+
+  // Keep already-open tabs/windows in sync. The persisted session remains the source of truth;
+  // BroadcastChannel is the fast path and the storage event is a compatibility fallback.
+  useEffect(() => {
+    if (!ownerId) return;
+    const channelName = `${FOCUS_CHANNEL_PREFIX}:${ownerId}`;
+    const storageKey = `${FOCUS_STORAGE_PREFIX}:${ownerId}`;
+    const applySession = (session: Session) => {
+      setSessions((current) => mergeFocusSessions(current, session));
+      setActive((current) => {
+        if (session.status === "running" || session.status === "paused") return session;
+        return current?.id === session.id ? null : current;
+      });
+    };
+
+    const channel = typeof BroadcastChannel !== "undefined" ? new BroadcastChannel(channelName) : null;
+    if (channel) {
+      channel.onmessage = (event: MessageEvent<unknown>) => {
+        const session = readSyncSession(event.data, ownerId);
+        if (session) applySession(session);
+      };
+      channelRef.current = channel;
+    }
+
+    const onStorage = (event: StorageEvent) => {
+      if (event.key !== storageKey || !event.newValue) return;
+      try {
+        const session = readSyncSession(JSON.parse(event.newValue), ownerId);
+        if (session) applySession(session);
+      } catch {
+        // Ignore malformed cross-tab messages; the server session remains authoritative.
+      }
+    };
+    window.addEventListener("storage", onStorage);
+
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      channel?.close();
+      if (channelRef.current === channel) channelRef.current = null;
+    };
+  }, [ownerId]);
+
+  function publishSession(session: Session) {
+    if (!ownerId || session.owner_id !== ownerId) return;
+    const message = {
+      type: "session-updated",
+      session,
+      nonce: `${Date.now()}-${Math.random()}`,
+    };
+    channelRef.current?.postMessage(message);
+    try {
+      window.localStorage.setItem(`${FOCUS_STORAGE_PREFIX}:${ownerId}`, JSON.stringify(message));
+    } catch {
+      // BroadcastChannel still works when localStorage is unavailable.
+    }
+  }
 
   // Derive the running timer from its persisted start timestamp, not from a page-local counter.
   // This restores the correct time after navigation, refreshes and reopening the browser.
@@ -78,7 +157,8 @@ export function FocusStudio({
       });
       setActive(session);
       setElapsed(0);
-      setSessions((current) => [session, ...current]);
+      setSessions((current) => mergeFocusSessions(current, session));
+      publishSession(session);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Не удалось начать фокус.");
     }
@@ -97,9 +177,10 @@ export function FocusStudio({
     };
     try {
       const { session } = await request(`/api/focus/${active.id}`, "PATCH", body);
-      setSessions((current) => current.map((item) => item.id === session.id ? session : item));
+      setSessions((current) => mergeFocusSessions(current, session));
       setActive(status === "completed" || status === "cancelled" ? null : session);
       setElapsed(actualElapsed);
+      publishSession(session);
       if (status === "completed") {
         setProgress((current) => current ? {
           ...current,
@@ -160,7 +241,7 @@ export function FocusStudio({
               <button className="text-button text-button--danger" onClick={() => void save("cancelled")}>Отменить</button>
             </div>
           )}
-          {active?.status === "running" && <p className="timer-persistence-note">Сессия сохраняется автоматически и продолжится при переходе в другой раздел.</p>}
+          {active?.status === "running" && <p className="timer-persistence-note">Сессия сохраняется и синхронизируется между открытыми вкладками и окнами.</p>}
           {error && <p className="form-message form-message--error">{error}</p>}
         </section>
 
