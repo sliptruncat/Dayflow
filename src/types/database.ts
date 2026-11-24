@@ -99,9 +99,9 @@ export interface Database {
         Relationships: [];
       };
       contacts: {
-        Row: { id: string; owner_id: string; full_name: string; company: string | null; role: string | null; email: string | null; phone: string | null; birthday: string | null; notes: string | null; created_at: string; updated_at: string };
-        Insert: { id?: string; owner_id: string; full_name: string; company?: string | null; role?: string | null; email?: string | null; phone?: string | null; birthday?: string | null; notes?: string | null };
-        Update: { full_name?: string; company?: string | null; role?: string | null; email?: string | null; phone?: string | null; birthday?: string | null; notes?: string | null };
+        Row: { id: string; owner_id: string; full_name: string; company: string | null; role: string | null; email: string | null; phone: string | null; birthday: string | null; next_follow_up_at: string | null; notes: string | null; created_at: string; updated_at: string };
+        Insert: { id?: string; owner_id: string; full_name: string; company?: string | null; role?: string | null; email?: string | null; phone?: string | null; birthday?: string | null; next_follow_up_at?: string | null; notes?: string | null };
+        Update: { full_name?: string; company?: string | null; role?: string | null; email?: string | null; phone?: string | null; birthday?: string | null; next_follow_up_at?: string | null; notes?: string | null };
         Relationships: [];
       };
       contact_interactions: {
