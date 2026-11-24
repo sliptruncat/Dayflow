@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { navigationItems, type AppSection } from "@/lib/navigation";
 import { isThemeId, themeStorageKey, type ThemeId } from "@/lib/themes";
 import { ThemePicker } from "@/components/theme-picker";
+import { FocusMiniTimer } from "@/components/focus-mini-timer";
 import type { AppContext } from "@/server/app-context";
 
 type AppShellProps = { children: React.ReactNode; activeSection?: AppSection; context: AppContext };
@@ -99,7 +100,7 @@ export function AppShell({ children, context, activeSection }: AppShellProps) {
         </div>
       </aside>
       <main className="main-content">
-        <div className="context-bar"><span>{current.label}</span><span className={`context-status ${context.databaseError ? "context-status--error" : ""}`}>{context.databaseError ? "Синхронизация недоступна" : "Личный режим"}</span></div>
+        <div className="context-bar"><span>{current.label}</span><div className="context-bar-actions">{context.user && <FocusMiniTimer ownerId={context.user.id} />}<span className={`context-status ${context.databaseError ? "context-status--error" : ""}`}>{context.databaseError ? "Синхронизация недоступна" : "Личный режим"}</span></div></div>
         {children}
       </main>
       <nav className="bottom-nav" aria-label="Мобильная навигация">
