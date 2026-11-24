@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { calculateBudgetUsage, type BudgetPeriod, type TransactionForUsage } from "@/lib/finance-budget";
+import { dateKeyInTimeZone } from "@/lib/calendar-month";
 type ModuleKind = "finance" | "contacts" | "health";
 type Row = Record<string, string | number | boolean | null>;
 const endpoints: Record<ModuleKind, string> = { finance: "/api/finance/transactions", contacts: "/api/contacts", health: "/api/health/entries" };
@@ -10,15 +11,15 @@ type FinanceCategory = { id: string; name: string; kind: "income" | "expense"; c
 type FinanceBudget = { id: string; name: string; amount: number; currency: string; period: BudgetPeriod; starts_on: string; category_id: string | null };
 type FinanceTransaction = TransactionForUsage & { id: string; title: string };
 
-function localDateKey(date = new Date()) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+function localDateKey(timeZone: string) {
+  return dateKeyInTimeZone(new Date(), timeZone);
 }
 
 function formatDateKey(value: string) {
   return new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "short", timeZone: "UTC" }).format(new Date(`${value}T12:00:00.000Z`));
 }
 
-export function PersonalModuleWorkspace({ kind }: { kind: ModuleKind }) {
+export function PersonalModuleWorkspace({ kind, timeZone = "UTC" }: { kind: ModuleKind; timeZone?: string }) {
   const [rows, setRows] = useState<Row[]>([]);
   const [financeCategories, setFinanceCategories] = useState<FinanceCategory[]>([]);
   const [categoryId, setCategoryId] = useState("");
@@ -31,7 +32,7 @@ export function PersonalModuleWorkspace({ kind }: { kind: ModuleKind }) {
   const [amount, setAmount] = useState("");
   const [moneyKind, setMoneyKind] = useState<"expense" | "income">("expense");
   const [currency, setCurrency] = useState("RUB");
-  const [occurredOn, setOccurredOn] = useState(localDateKey());
+  const [occurredOn, setOccurredOn] = useState(() => localDateKey(timeZone));
   const [fullName, setFullName] = useState("");
   const [company, setCompany] = useState("");
   const [role, setRole] = useState("");
@@ -58,8 +59,8 @@ export function PersonalModuleWorkspace({ kind }: { kind: ModuleKind }) {
 
   function resetForm() {
     setEditingId(null); setTitle(""); setAmount(""); setMoneyKind("expense"); setCurrency("RUB"); setCategoryId("");
-    setOccurredOn(localDateKey()); setFullName(""); setCompany(""); setRole("");
-    setEmail(""); setPhone(""); setContactNotes(""); setEntryDate(localDateKey());
+    setOccurredOn(localDateKey(timeZone)); setFullName(""); setCompany(""); setRole("");
+    setEmail(""); setPhone(""); setContactNotes(""); setEntryDate(localDateKey(timeZone));
     setSleep(""); setMood(""); setEnergy(""); setNotes("");
   }
 
@@ -154,13 +155,13 @@ export function PersonalModuleWorkspace({ kind }: { kind: ModuleKind }) {
       </div>
     </div>
   </section>
-    {kind === "finance" && <FinancePlanningPanel transactions={rows as unknown as FinanceTransaction[]} onCategoriesChange={setFinanceCategories} />}
+    {kind === "finance" && <FinancePlanningPanel transactions={rows as unknown as FinanceTransaction[]} onCategoriesChange={setFinanceCategories} timeZone={timeZone} />}
     {kind === "contacts" && <ContactHistoryPanel contacts={rows.map(row => ({ id: String(row.id), full_name: String(row.full_name) }))} />}
   </>;
 }
 
 
-function FinancePlanningPanel({ transactions, onCategoriesChange }: { transactions: FinanceTransaction[]; onCategoriesChange: (categories: FinanceCategory[]) => void }) {
+function FinancePlanningPanel({ transactions, onCategoriesChange, timeZone }: { transactions: FinanceTransaction[]; onCategoriesChange: (categories: FinanceCategory[]) => void; timeZone: string }) {
   const [categories, setCategories] = useState<FinanceCategory[]>([]);
   const [budgets, setBudgets] = useState<FinanceBudget[]>([]);
   const [categoryName, setCategoryName] = useState("");
@@ -170,8 +171,8 @@ function FinancePlanningPanel({ transactions, onCategoriesChange }: { transactio
   const [budgetCurrency, setBudgetCurrency] = useState("RUB");
   const [budgetPeriod, setBudgetPeriod] = useState<BudgetPeriod>("monthly");
   const [budgetCategoryId, setBudgetCategoryId] = useState("");
-  const [budgetStartsOn, setBudgetStartsOn] = useState(localDateKey());
-  const today = localDateKey();
+  const [budgetStartsOn, setBudgetStartsOn] = useState(() => localDateKey(timeZone));
+  const today = localDateKey(timeZone);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
@@ -197,7 +198,7 @@ function FinancePlanningPanel({ transactions, onCategoriesChange }: { transactio
     try {
       const r = await fetch("/api/finance/budgets", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: budgetName, amount: Number(budgetAmount), currency: budgetCurrency, period: budgetPeriod, category_id: budgetCategoryId || null, starts_on: budgetStartsOn }) });
       const p = await r.json(); if (!r.ok) throw new Error(p.error ?? "Не удалось сохранить бюджет.");
-      setBudgetName(""); setBudgetAmount(""); setBudgetCategoryId(""); setBudgetStartsOn(localDateKey()); setMessage("Бюджет добавлен."); await load();
+      setBudgetName(""); setBudgetAmount(""); setBudgetCategoryId(""); setBudgetStartsOn(localDateKey(timeZone)); setMessage("Бюджет добавлен."); await load();
     } catch (e) { setError(e instanceof Error ? e.message : "Ошибка сохранения."); } finally { setBusy(false); }
   }
   return <section className="personal-module-planning">
