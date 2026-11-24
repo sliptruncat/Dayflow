@@ -27,6 +27,7 @@ export const contactSchema = z.object({
   email: z.preprocess((value) => value === "" ? null : value, z.string().trim().email().max(254).nullable().optional()),
   phone: optionalText(40),
   birthday: isoDate.nullable().optional(),
+  next_follow_up_at: isoDate.nullable().optional(),
   notes: optionalText(5000),
 }).strict();
 
