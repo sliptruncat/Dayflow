@@ -275,3 +275,17 @@ p{ text-wrap:pretty }
 /* Finance budgets show current-period spending without mixing currencies. */
 .finance-budget-progress{height:7px;margin:8px 0 5px;border-radius:999px;background:var(--surface-muted);overflow:hidden}
 .finance-budget-progress span{display:block;height:100%;border-radius:inherit;background:var(--accent);transition:width .2s ease}
+
+/* Private health journal trends — a descriptive summary, not a medical assessment. */
+.health-trend-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:14px 0 20px}
+.health-trend-summary>div{display:flex;flex-direction:column;gap:5px;padding:14px;border:1px solid var(--line);border-radius:14px;background:var(--surface)}
+.health-trend-summary strong{font-size:20px;font-variant-numeric:tabular-nums}
+.health-trend-summary span,.health-trend-note{color:var(--muted);font-size:12px}
+.health-trend-chart{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:10px;align-items:end;min-height:140px;padding:12px 0}
+.health-trend-column{display:flex;min-width:0;flex-direction:column;align-items:center;gap:6px}
+.health-trend-bar{display:flex;width:100%;height:84px;align-items:flex-end;overflow:hidden;border-radius:8px 8px 4px 4px;background:var(--line)}
+.health-trend-bar span{display:block;width:100%;border-radius:8px 8px 4px 4px;background:var(--accent);transition:height .2s ease}
+.health-trend-column strong{font-size:11px;font-variant-numeric:tabular-nums}
+.health-trend-column time{color:var(--muted);font-size:10px;white-space:nowrap}
+.health-trend-note{margin-top:8px}
+@media(max-width:600px){.health-trend-summary{gap:7px}.health-trend-summary>div{padding:10px}.health-trend-summary strong{font-size:16px}.health-trend-chart{gap:5px}.health-trend-column time{font-size:9px}}
