@@ -81,6 +81,42 @@ export interface Database {
         Relationships: [];
       };
     };
+      finance_categories: {
+        Row: { id: string; owner_id: string; name: string; kind: "income" | "expense"; color: string; created_at: string };
+        Insert: { id?: string; owner_id: string; name: string; kind: "income" | "expense"; color?: string };
+        Update: { name?: string; kind?: "income" | "expense"; color?: string };
+        Relationships: [];
+      };
+      finance_transactions: {
+        Row: { id: string; owner_id: string; category_id: string | null; title: string; amount: number; currency: string; kind: "income" | "expense"; occurred_on: string; is_recurring: boolean; recurrence: "weekly" | "monthly" | "yearly" | null; notes: string | null; created_at: string; updated_at: string };
+        Insert: { id?: string; owner_id: string; category_id?: string | null; title: string; amount: number; currency?: string; kind: "income" | "expense"; occurred_on?: string; is_recurring?: boolean; recurrence?: "weekly" | "monthly" | "yearly" | null; notes?: string | null };
+        Update: { category_id?: string | null; title?: string; amount?: number; currency?: string; kind?: "income" | "expense"; occurred_on?: string; is_recurring?: boolean; recurrence?: "weekly" | "monthly" | "yearly" | null; notes?: string | null };
+        Relationships: [];
+      };
+      finance_budgets: {
+        Row: { id: string; owner_id: string; category_id: string | null; name: string; amount: number; currency: string; period: "weekly" | "monthly" | "yearly"; starts_on: string; created_at: string };
+        Insert: { id?: string; owner_id: string; category_id?: string | null; name: string; amount: number; currency?: string; period?: "weekly" | "monthly" | "yearly"; starts_on?: string };
+        Update: { category_id?: string | null; name?: string; amount?: number; currency?: string; period?: "weekly" | "monthly" | "yearly"; starts_on?: string };
+        Relationships: [];
+      };
+      contacts: {
+        Row: { id: string; owner_id: string; full_name: string; company: string | null; role: string | null; email: string | null; phone: string | null; birthday: string | null; notes: string | null; created_at: string; updated_at: string };
+        Insert: { id?: string; owner_id: string; full_name: string; company?: string | null; role?: string | null; email?: string | null; phone?: string | null; birthday?: string | null; notes?: string | null };
+        Update: { full_name?: string; company?: string | null; role?: string | null; email?: string | null; phone?: string | null; birthday?: string | null; notes?: string | null };
+        Relationships: [];
+      };
+      contact_interactions: {
+        Row: { id: string; owner_id: string; contact_id: string; occurred_at: string; channel: "note" | "call" | "meeting" | "email" | "message"; summary: string; created_at: string };
+        Insert: { id?: string; owner_id: string; contact_id: string; occurred_at?: string; channel?: "note" | "call" | "meeting" | "email" | "message"; summary: string };
+        Update: { occurred_at?: string; channel?: "note" | "call" | "meeting" | "email" | "message"; summary?: string };
+        Relationships: [];
+      };
+      health_entries: {
+        Row: { id: string; owner_id: string; entry_date: string; sleep_minutes: number | null; mood: number | null; energy: number | null; notes: string | null; created_at: string; updated_at: string };
+        Insert: { id?: string; owner_id: string; entry_date?: string; sleep_minutes?: number | null; mood?: number | null; energy?: number | null; notes?: string | null };
+        Update: { entry_date?: string; sleep_minutes?: number | null; mood?: number | null; energy?: number | null; notes?: string | null };
+        Relationships: [];
+      };
     Views: Record<string, never>;
     Functions: Record<string, never>;
     Enums: Record<string, never>;
