@@ -260,3 +260,8 @@ p{ text-wrap:pretty }
 
 .personal-module-delete{grid-column:1/-1;justify-self:start;padding:2px 0;color:var(--muted);font-size:11px}
 .personal-module-delete:hover{color:var(--danger,var(--ink))}
+
+.personal-module-form-actions,.personal-module-row-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.personal-module-row-actions{grid-column:1/-1;padding-top:3px}
+.personal-module-row-actions .personal-module-delete{margin-left:auto}
+.personal-module-form-actions .text-button,.personal-module-row-actions .text-button{font-size:12px}
