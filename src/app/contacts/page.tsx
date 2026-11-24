@@ -4,5 +4,5 @@ import { getAppContext } from "@/server/app-context";
 export const dynamic = "force-dynamic";
 export default async function Page() {
   const context = await getAppContext();
-  return <AppShell context={context} activeSection="contacts"><PersonalModuleWorkspace kind="contacts" /></AppShell>;
+  return <AppShell context={context} activeSection="contacts"><PersonalModuleWorkspace kind="contacts" timeZone={context.preferences?.timezone ?? "UTC"} /></AppShell>;
 }
