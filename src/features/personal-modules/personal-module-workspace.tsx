@@ -37,6 +37,20 @@ export function PersonalModuleWorkspace({ kind }: { kind: ModuleKind }) {
   }, [kind]);
   useEffect(() => { void load(); }, [load]);
 
+  async function removeRow(id: string) {
+    if (!window.confirm("Удалить эту запись? Действие нельзя отменить.")) return;
+    setError(""); setMessage("");
+    try {
+      const response = await fetch(`${endpoints[kind]}/${id}`, { method: "DELETE" });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error ?? "Не удалось удалить запись.");
+      setMessage("Запись удалена.");
+      await load();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Ошибка удаления.");
+    }
+  }
+
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault(); setSaving(true); setError(""); setMessage("");
     let body: Record<string, unknown>;
@@ -87,9 +101,9 @@ export function PersonalModuleWorkspace({ kind }: { kind: ModuleKind }) {
       <div className="personal-module-list">
         <div className="personal-module-list-heading"><div><p className="eyebrow">ВАША ИСТОРИЯ</p><h2>{kind === "health" ? "Дневник" : kind === "contacts" ? "Люди" : "Операции"}</h2></div><button className="text-button" type="button" onClick={() => void load()}>Обновить</button></div>
         {loading ? <p className="personal-module-empty">Загружаем записи…</p> : rows.length === 0 ? <p className="personal-module-empty">Пока записей нет. Добавьте первую — она появится здесь.</p> : <ul className="personal-module-items">{rows.map(row => <li key={String(row.id)}>
-          {kind === "finance" && <><strong>{String(row.title)}</strong><span>{String(row.kind) === "income" ? "+" : "−"}{Number(row.amount).toLocaleString("ru-RU")} {String(row.currency)}</span><small>{String(row.occurred_on)}</small></>}
-          {kind === "contacts" && <><strong>{String(row.full_name)}</strong><span>{[row.company, row.role].filter(Boolean).join(" · ") || "Контакт"}</span><small>{String(row.email ?? row.phone ?? "")}</small></>}
-          {kind === "health" && <><strong>{String(row.entry_date)}</strong><span>{row.sleep_minutes == null ? "Сон не указан" : "Сон: " + Math.floor(Number(row.sleep_minutes)/60) + " ч " + (Number(row.sleep_minutes)%60) + " мин"} · {row.mood == null ? "настроение —" : "настроение " + row.mood + "/5"}</span><small>{String(row.notes ?? "")}</small></>}
+          {kind === "finance" && <><strong>{String(row.title)}</strong><span>{String(row.kind) === "income" ? "+" : "−"}{Number(row.amount).toLocaleString("ru-RU")} {String(row.currency)}</span><small>{String(row.occurred_on)}</small><button className="text-button personal-module-delete" type="button" onClick={() => void removeRow(String(row.id))}>Удалить</button></>}
+          {kind === "contacts" && <><strong>{String(row.full_name)}</strong><span>{[row.company, row.role].filter(Boolean).join(" · ") || "Контакт"}</span><small>{String(row.email ?? row.phone ?? "")}</small><button className="text-button personal-module-delete" type="button" onClick={() => void removeRow(String(row.id))}>Удалить</button></>}
+          {kind === "health" && <><strong>{String(row.entry_date)}</strong><span>{row.sleep_minutes == null ? "Сон не указан" : "Сон: " + Math.floor(Number(row.sleep_minutes)/60) + " ч " + (Number(row.sleep_minutes)%60) + " мин"} · {row.mood == null ? "настроение —" : "настроение " + row.mood + "/5"}</span><small>{String(row.notes ?? "")}</small><button className="text-button personal-module-delete" type="button" onClick={() => void removeRow(String(row.id))}>Удалить</button></>}
         </li>)}</ul>}
       </div>
     </div>
