@@ -1,165 +1,43 @@
-# DAYFLOW — Phase 3: Calendar Technical Specification
+# DAYFLOW — Calendar implementation status and technical notes
 
-**Status:** planned; no Phase 3 migration or UI has been implemented.
-**Prerequisites:** Phase 2 public configuration, migration application and two-user RLS verification must happen in local or isolated Supabase infrastructure before release. The database remains the source of truth; Google Calendar sync, AI scheduling, reminders, storage uploads and project membership are out of scope for this phase.
+**Last reviewed:** 24 November 2026  
+**Status:** Phase 3 calendar foundation is implemented; schedule correctness improvements are in progress on `feature/calendar-schedule-correctness`.
 
-## 1. Scope and delivery boundary
+This document describes the current repository implementation and the remaining work. It replaces the earlier planned-only status, which no longer reflected the shipped calendar and database migrations.
 
-Phase 3 delivers a durable, user-owned calendar: a year overview, month, week and day views; user-created tasks and calendar events; task completion from a calendar surface; categories, colours, deadlines and month-cover metadata. The UI must display only persisted records and explicit empty, loading and error states.
+## Implemented
 
-It does **not** implement subtasks, projects, timer sessions, reminders, external synchronization, cover-file upload, AI-generated covers or collaboration. Those features require their own tables, permissions or service contracts in later phases. A cover row therefore stores metadata and a private-storage path only; Phase 7 owns the bucket, upload flow and storage policies.
+- Owner-scoped calendar schema and RLS are present in `supabase/migrations/202611190001_calendar_and_tasks.sql`.
+- Task, event and category repositories/API routes are implemented.
+- Calendar UI includes year, month, week and day views.
+- Tasks and calendar events are loaded from Supabase for the authenticated user; subtasks are hydrated in both Tasks and Calendar.
+- Month/day grouping uses the profile's IANA timezone.
+- All-day events are separated from timed events.
+- The schedule correctness branch introduces timezone-aware hour slots, including 23/25-hour days on daylight-saving transitions, and shows events in every hour they overlap.
+- Existing SQL isolation tests and timezone validation tests run in CI against a temporary local Supabase stack.
 
-## 2. Existing schema and compatibility
+## Schedule rendering contract
 
-The existing migration creates only `profiles` and `user_preferences`, both owned by `auth.users`. It also provides `public.set_updated_at()` and IANA timezone validation triggers. Phase 3 must add a new append-only migration, proposed as `supabase/migrations/202611190001_calendar_and_tasks.sql`; it must not alter or rewrite the Phase 2 migration.
+- Calendar dates are date keys (`YYYY-MM-DD`) in the profile timezone.
+- Event timestamps are stored as instants (`timestamptz`) and must be formatted and bucketed in the profile timezone, never by reading UTC hour fields directly.
+- A local calendar day may contain 23, 24 or 25 elapsed hours. The schedule grid must derive its slots from the instant at local midnight to the next local midnight.
+- Timed event intervals are half-open: `[starts_at, ends_at)`. An event appears in every hour slot it overlaps; an event ending exactly at a slot boundary does not appear in the following slot.
+- Concurrent events must remain individually visible and actionable.
+- All-day events and task deadlines are shown in a separate all-day/agenda lane.
+- Multi-day events appear on every local date they overlap.
 
-All new user-owned rows use the existing ownership convention: `owner_id uuid not null references auth.users(id) on delete cascade`, UUID primary keys, `created_at`, `updated_at`, RLS and explicit write checks. Repository commands derive `owner_id` from the authenticated session; it is never accepted from an HTTP payload.
+## Known limitations / next work
 
-### Phase 4 collaboration compatibility
+1. The calendar page currently loads the user's full task and event collections rather than requesting a bounded visible date range. Add a range-aware repository/API contract before the dataset grows.
+2. The week/day schedule currently uses hourly segments for display; minute-accurate vertical positioning and drag-to-reschedule are not implemented.
+3. DST ambiguity in a user-entered local time (the repeated hour when clocks move backward) needs an explicit product decision and UI treatment. Nonexistent local times during the spring-forward gap must not be silently converted to a different time.
+4. Browser end-to-end coverage for creating, editing and verifying calendar items across timezone changes is still outstanding.
+5. Locale-specific week-start preferences and configurable all-day/task lane behavior remain future improvements.
 
-Phase 3 is deliberately owner-scoped: no current task, event, category or cover has a `calendar_id`, and its RLS policies use only `owner_id = auth.uid()`. This prevents accidental sharing today. [Sharing & Collaboration](SHARING_COLLABORATION_SPEC.md) describes the future append-only migration that creates personal calendars, backfills existing rows and replaces these policies with calendar-membership checks. Phase 3 code must not add a shortcut that exposes records based on another user's ID or an unverified calendar parameter.
+## Safety and release boundaries
 
-## 3. Data model
-
-### Categories
-
-`categories` is the single reusable classification source for both tasks and events.
-
-| Column | Rules |
-| --- | --- |
-| `id` | UUID primary key, generated by `gen_random_uuid()` |
-| `owner_id` | authenticated owner |
-| `name` | trimmed 1–60 characters; unique per owner case-insensitively |
-| `color` | canonical `#RRGGBB` value |
-| `created_at`, `updated_at` | `timestamptz`, default `now()` |
-
-The UI may show the category colour by default. A record-level `color_override` is optional and deliberately separate from category colour so changing a category does not silently rewrite historical choices.
-
-### Tasks
-
-`tasks` supports a useful calendar task without pre-implementing Phase 5 project entities.
-
-| Column | Rules |
-| --- | --- |
-| `id`, `owner_id`, timestamps | standard ownership columns |
-| `title` | trimmed 1–240 characters |
-| `description` | nullable, at most 10,000 characters |
-| `status` | `inbox`, `planned`, `in_progress`, `paused`, `completed`, `cancelled`; default `inbox` |
-| `priority` | `none`, `low`, `medium`, `high`; default `none` |
-| `category_id` | nullable, owner-scoped category reference |
-| `color_override` | nullable canonical `#RRGGBB` |
-| `start_at`, `deadline_at` | nullable `timestamptz`; deadline cannot precede start |
-| `is_all_day` | boolean, default false; all-day values are rendered in the user's IANA timezone |
-| `estimated_minutes` | nullable positive integer, max one week |
-| `completed_at` | nullable; Phase 3 completion command sets it, reopening clears it |
-
-Tasks without a time remain visible in Inbox/Tasks in later work; calendar queries return tasks overlapping the requested range or with a deadline in that range. A task is never copied into a separate calendar-row table.
-
-### Calendar events
-
-`calendar_events` represents user-created timed or all-day commitments, not external-provider events.
-
-| Column | Rules |
-| --- | --- |
-| `id`, `owner_id`, timestamps | standard ownership columns |
-| `title`, `description` | same text bounds as tasks |
-| `category_id`, `color_override` | same semantics as tasks |
-| `starts_at`, `ends_at` | required `timestamptz`; `ends_at > starts_at` |
-| `is_all_day` | boolean, default false |
-| `location` | nullable, at most 240 characters |
-
-No recurrence, attendee, external identifier or provider token is included. Recurrence and external sync need conflict and ownership contracts first.
-
-### Month covers
-
-`month_covers` holds at most one cover configuration for a user/month.
-
-| Column | Rules |
-| --- | --- |
-| `id`, `owner_id`, timestamps | standard ownership columns |
-| `month_start` | `date`, required and must be the first day of its month |
-| `theme_id` | nullable `sage`, `griotte` or `seafoam` |
-| `image_path` | nullable private Storage object path, never a public URL |
-| `source` | `preset`, `uploaded`, `generated`; Phase 3 may write only `preset` |
-| uniqueness | unique `(owner_id, month_start)` |
-
-An absent row means the default cover. Phase 3 does not create a Storage bucket or upload endpoint.
-
-## 4. Migration contract
-
-The planned migration creates the four tables, check constraints, `set_updated_at` triggers and the following indexes:
-
-- `categories(owner_id, lower(name))` unique index;
-- `tasks(owner_id, start_at)`, `tasks(owner_id, deadline_at)`, `tasks(owner_id, status)`;
-- `calendar_events(owner_id, starts_at)` and `calendar_events(owner_id, ends_at)`;
-- `month_covers(owner_id, month_start)` unique index.
-
-Foreign keys from tasks/events to categories must prevent cross-owner assignment. This is enforced with composite unique `(owner_id, id)` on `categories` and composite `(owner_id, category_id)` foreign keys from tasks/events. The migration must enable RLS on every new table and create select/insert/update/delete policies using `owner_id = auth.uid()` and `WITH CHECK (owner_id = auth.uid())`.
-
-Before a merge, validate the migration with `supabase db reset` against local or isolated infrastructure. The required two-user protocol proves a user cannot read, insert, update or delete another user's categories, tasks, events or covers, including a task/event that tries to reference another user's category. No migration may be applied to production as part of this phase.
-
-## 5. TypeScript and validation
-
-After the migration is stable, regenerate or manually update `src/types/database.ts` with the four table contracts. Add feature-level domain types under `src/features/calendar/types.ts` for `CalendarView`, `CalendarRange`, `CalendarTask`, `CalendarEvent`, `Category` and `MonthCover`.
-
-Zod command schemas live in `src/lib/validation/` and enforce all database-compatible text, enum, colour and temporal constraints before a route reaches a repository. They accept ISO timestamps and normalize empty optional strings to `null`. The server computes interval range boundaries from the selected calendar date and the authenticated user's validated IANA timezone; it does not trust a browser-supplied owner or timezone.
-
-## 6. Repositories and HTTP API
-
-Repositories are placed under `src/server/repositories/` and receive the request-scoped typed Supabase client plus an authenticated owner ID:
-
-- `category-repository.ts`: list, create, update and delete only unused categories; return a validation conflict if a category is still referenced.
-- `task-repository.ts`: range list, create, update, delete and explicit `setTaskCompletion`.
-- `calendar-event-repository.ts`: range list, create, update and delete.
-- `month-cover-repository.ts`: get/upsert metadata only; no upload implementation.
-
-Route handlers use consistent failure classes: `401` no session, `400` invalid command, `404` owner-scoped record not found, `409` invalid transition/category conflict, and `503` Supabase setup absent. Proposed routes are:
-
-```text
-GET/POST    /api/calendar/tasks
-PATCH/DELETE /api/calendar/tasks/[taskId]
-POST        /api/calendar/tasks/[taskId]/completion
-GET/POST    /api/calendar/events
-PATCH/DELETE /api/calendar/events/[eventId]
-GET/POST/PATCH/DELETE /api/calendar/categories[/[categoryId]]
-GET/PUT     /api/calendar/month-covers/[month]
-GET         /api/calendar?from=<ISO>&to=<ISO>
-```
-
-The range endpoint returns owner-scoped tasks and events with categories for one bounded interval. It rejects an invalid or unreasonably large range, preventing accidental unbounded personal-data reads.
-
-## 7. Calendar UI
-
-The feature belongs in `src/features/calendar/`; route composition belongs in `src/app/calendar/`. It extends the existing Calendar navigation item rather than creating another application shell.
-
-- **Year:** twelve keyboard-focusable month cards, each with cover metadata/preset, aggregate indicators and a link to the selected month.
-- **Month:** semantic 7-column grid, locale-aware Monday/Sunday start from preferences, overflow-safe task/event chips, selected-day agenda and an explicit timezone label.
-- **Week:** seven date columns and a time grid; all-day items are separate from timed items. Overlapping timed entries must not silently hide one another.
-- **Day:** chronological agenda with all-day area, time slots and an empty state.
-- **Commands:** create/edit task or event in an accessible dialog/drawer; destructive deletion needs a confirmation step; completion is an explicit task transition. Forms surface field and request errors without optimistic data invention.
-- **Colours and deadlines:** category colour is shown unless a valid override exists; deadlines have a distinct accessible icon/text treatment, not colour alone.
-- **Covers:** year/month show preset or saved metadata. File selection, image generation and upload are disabled/deferred until Phase 7.
-
-Desktop keeps the existing sidebar and calendar toolbar. On narrow screens, the view switcher remains horizontally reachable, the week view becomes a date-selector plus one-day agenda, and the month grid retains semantic labels for screen readers. Keyboard navigation, visible focus, reduced motion and touch targets are mandatory.
-
-## 8. Test plan and acceptance criteria
-
-1. Unit-test date-range construction across timezone and DST boundaries, category/colour parsing, interval constraints and task completion transitions.
-2. Unit-test redirect/auth-independent route validation and repository error mapping with mocked clients.
-3. In isolated Supabase, run migration and SQL two-user RLS checks plus cross-owner category-reference rejection.
-4. Add route integration tests for owner-derived writes, invalid ranges, update/delete ownership and completion/reopen behavior.
-5. Add component tests for all four view switcher states, empty/error/loading states and keyboard-operable dialogs.
-6. Add Playwright coverage once the E2E runner is introduced: create a category, create a task and event, see them in the relevant views, edit, complete, delete with confirmation, and confirm another user cannot access them.
-
-Phase 3 is complete only when the migration and RLS protocol pass in isolated infrastructure, TypeScript/lint/unit/build gates pass, and the calendar renders persisted data after reload. It is not complete merely because the views render with mock data.
-
-## 9. Implementation order
-
-1. Agree the migration contract and execute it only in local/isolated Supabase.
-2. Update generated database types, Zod schemas, repositories and API tests.
-3. Build shared calendar range/date utilities and the range endpoint.
-4. Implement categories plus task/event commands and owner-scoped integration tests.
-5. Implement year and month views, then week and day views using the same range model.
-6. Add task/event dialogs, completion and confirmed deletion.
-7. Add responsive/accessibility pass, component tests and E2E setup.
-8. Prepare cover metadata display; defer uploads and generated images to Phase 7.
+- User-owned data must remain scoped to the authenticated owner and protected by RLS.
+- Do not trust a browser-supplied owner ID or unvalidated timezone.
+- Do not apply migrations or modify Production data as part of calendar UI work.
+- Validate database migrations and SQL tests only against disposable local/isolated Supabase infrastructure in CI.
+- A feature branch is not a release: merge only after CI, Preview and user verification.
