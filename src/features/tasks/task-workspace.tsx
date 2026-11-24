@@ -16,11 +16,11 @@ function formatDeadline(value: string | null, timeZone: string) { return value ?
 function priorityLabel(priority: TaskPriority) { return ({ none: "Без приоритета", low: "Низкий", medium: "Средний", high: "Высокий" })[priority]; }
 function nextDateKey(value: string) { const date = new Date(`${value}T12:00:00Z`); date.setUTCDate(date.getUTCDate() + 1); return date.toISOString().slice(0, 10); }
 
-export function TaskWorkspace({ initialTasks, initialEvents = [], initialCategories = [], dataError = false, title = "Мой календарь", subtitle = "Личные задачи сохраняются в вашем защищённом пространстве.", timeZone = "UTC", showMonth = false }: { initialTasks: Task[]; initialEvents?: CalendarEvent[]; initialCategories?: Category[]; dataError?: boolean; title?: string; subtitle?: string; timeZone?: string; showMonth?: boolean }) {
+export function TaskWorkspace({ initialTasks, initialEvents = [], initialCategories = [], initialSubtasks = [], dataError = false, title = "Мой календарь", subtitle = "Личные задачи сохраняются в вашем защищённом пространстве.", timeZone = "UTC", showMonth = false }: { initialTasks: Task[]; initialEvents?: CalendarEvent[]; initialCategories?: Category[]; initialSubtasks?: Subtask[]; dataError?: boolean; title?: string; subtitle?: string; timeZone?: string; showMonth?: boolean }) {
   const [tasks, setTasks] = useState(initialTasks);
   const [events, setEvents] = useState(initialEvents);
   const [categories, setCategories] = useState(initialCategories);
-  const [subtasks, setSubtasks] = useState<Record<string, Subtask[]>>({});
+  const [subtasks, setSubtasks] = useState<Record<string, Subtask[]>>(() => initialSubtasks.reduce<Record<string, Subtask[]>>((grouped, subtask) => { (grouped[subtask.task_id] ??= []).push(subtask); return grouped; }, {}));
   const [search, setSearch] = useState(""); const [categoryFilter, setCategoryFilter] = useState("all"); const [statusFilter, setStatusFilter] = useState("active"); const [priorityFilter, setPriorityFilter] = useState("all"); const [view, setView] = useState<"year" | "month" | "week" | "day">("month");
   const [draft, setDraft] = useState<TaskForm>(blankForm);
   const [editing, setEditing] = useState<Task | null>(null);
