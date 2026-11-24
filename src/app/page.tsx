@@ -4,5 +4,5 @@ import { getAppContext } from "@/server/app-context";
 
 export default async function HomePage() {
   const context = await getAppContext();
-  return <AppShell context={context}><Dashboard configured={context.configured} /></AppShell>;
+  return <AppShell context={context}><Dashboard configured={context.configured} timeZone={context.preferences?.timezone ?? "UTC"} /></AppShell>;
 }
