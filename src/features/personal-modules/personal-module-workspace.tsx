@@ -137,7 +137,10 @@ export function PersonalModuleWorkspace({ kind }: { kind: ModuleKind }) {
         </li>)}</ul>}
       </div>
     </div>
-  </section>;
+  </section>
+    {kind === "finance" && <FinancePlanningPanel />}
+    {kind === "contacts" && <ContactHistoryPanel contacts={rows.map(row => ({ id: String(row.id), full_name: String(row.full_name) }))} />}
+  </>;
 }
 
 
