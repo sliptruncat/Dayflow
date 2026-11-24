@@ -7,7 +7,8 @@ create table public.finance_categories (
   kind text not null check (kind in ('income','expense')),
   color text not null default '#9aa88f' check (color ~ '^#[0-9a-fA-F]{6}$'),
   created_at timestamptz not null default now(),
-  unique (owner_id, name, kind)
+  unique (owner_id, name, kind),
+  unique (owner_id, id)
 );
 create table public.finance_transactions (
   id uuid primary key default gen_random_uuid(),
@@ -51,7 +52,8 @@ create table public.contacts (
   birthday date,
   notes text check (notes is null or char_length(notes) <= 5000),
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  unique (owner_id, id)
 );
 create index contacts_owner_name_idx on public.contacts(owner_id, full_name);
 create table public.contact_interactions (
