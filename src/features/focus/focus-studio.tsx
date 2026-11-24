@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { focusChannelName, focusStorageKey, focusSyncEventName, mergeFocusSessions, readFocusSyncSession } from "@/lib/focus-sync";
 import type { Database } from "@/types/database";
 
 type Task = Database["public"]["Tables"]["tasks"]["Row"];
@@ -26,11 +27,13 @@ export function FocusStudio({
   initialSessions,
   tasks,
   achievements,
+  ownerId,
 }: {
   initialProgress: Progress;
   initialSessions: Session[];
   tasks: Task[];
   achievements: Database["public"]["Tables"]["user_achievements"]["Row"][];
+  ownerId: string;
 }) {
   const [progress, setProgress] = useState(initialProgress);
   const [sessions, setSessions] = useState(initialSessions);
@@ -41,11 +44,61 @@ export function FocusStudio({
   );
   const [elapsed, setElapsed] = useState(0);
   const [error, setError] = useState<string>();
+  const channelRef = useRef<BroadcastChannel | null>(null);
   const remaining = Math.max(0, (active?.duration_seconds ?? duration) - elapsed);
   const stage = stages[progress?.companion_stage ?? "egg"];
 
-  // Derive the running timer from its persisted start timestamp, not from a page-local counter.
-  // This restores the correct time after navigation, refreshes and reopening the browser.
+  useEffect(() => {
+    if (!ownerId) return;
+    const storageKey = focusStorageKey(ownerId);
+    const applySession = (session: Session) => {
+      setSessions((current) => mergeFocusSessions(current, session));
+      setActive((current) => {
+        if (session.status === "running" || session.status === "paused") return session;
+        return current?.id === session.id ? null : current;
+      });
+    };
+    const channel = typeof BroadcastChannel !== "undefined" ? new BroadcastChannel(focusChannelName(ownerId)) : null;
+    if (channel) {
+      channel.onmessage = (event: MessageEvent<unknown>) => {
+        const session = readFocusSyncSession(event.data, ownerId);
+        if (session) applySession(session);
+      };
+      channelRef.current = channel;
+    }
+    const onStorage = (event: StorageEvent) => {
+      if (event.key !== storageKey || !event.newValue) return;
+      try {
+        const session = readFocusSyncSession(JSON.parse(event.newValue), ownerId);
+        if (session) applySession(session);
+      } catch {
+        // Ignore malformed messages; the persisted server session remains authoritative.
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      channel?.close();
+      if (channelRef.current === channel) channelRef.current = null;
+    };
+  }, [ownerId]);
+
+  function publishSession(session: Session) {
+    if (!ownerId || session.owner_id !== ownerId) return;
+    const message = { type: "session-updated", session, nonce: `${Date.now()}-${Math.random()}` };
+    window.dispatchEvent(new CustomEvent(focusSyncEventName, { detail: message }));
+    if (channelRef.current) {
+      channelRef.current.postMessage(message);
+      return;
+    }
+    try {
+      window.localStorage.setItem(focusStorageKey(ownerId), JSON.stringify(message));
+    } catch {
+      // Cross-tab sync is best-effort when browser messaging and local storage are unavailable.
+    }
+  }
+
+  // The timer is derived from persisted timestamps, so navigation and reloads never reset elapsed time.
   useEffect(() => {
     if (!active) {
       setElapsed(0);
@@ -78,7 +131,8 @@ export function FocusStudio({
       });
       setActive(session);
       setElapsed(0);
-      setSessions((current) => [session, ...current]);
+      setSessions((current) => mergeFocusSessions(current, session));
+      publishSession(session);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Не удалось начать фокус.");
     }
@@ -97,9 +151,10 @@ export function FocusStudio({
     };
     try {
       const { session } = await request(`/api/focus/${active.id}`, "PATCH", body);
-      setSessions((current) => current.map((item) => item.id === session.id ? session : item));
+      setSessions((current) => mergeFocusSessions(current, session));
       setActive(status === "completed" || status === "cancelled" ? null : session);
       setElapsed(actualElapsed);
+      publishSession(session);
       if (status === "completed") {
         setProgress((current) => current ? {
           ...current,
@@ -160,7 +215,7 @@ export function FocusStudio({
               <button className="text-button text-button--danger" onClick={() => void save("cancelled")}>Отменить</button>
             </div>
           )}
-          {active?.status === "running" && <p className="timer-persistence-note">Сессия сохраняется автоматически и продолжится при переходе в другой раздел.</p>}
+          {active?.status === "running" && <p className="timer-persistence-note">Сессия синхронизируется между разделами, вкладками и окнами.</p>}
           {error && <p className="form-message form-message--error">{error}</p>}
         </section>
 
