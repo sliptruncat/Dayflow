@@ -289,3 +289,6 @@ p{ text-wrap:pretty }
 .health-trend-column time{color:var(--muted);font-size:10px;white-space:nowrap}
 .health-trend-note{margin-top:8px}
 @media(max-width:600px){.health-trend-summary{gap:7px}.health-trend-summary>div{padding:10px}.health-trend-summary strong{font-size:16px}.health-trend-chart{gap:5px}.health-trend-column time{font-size:9px}}
+
+.contact-follow-up{font-variant-numeric:tabular-nums}
+.contact-follow-up--overdue{color:var(--danger,var(--accent));font-weight:700}
