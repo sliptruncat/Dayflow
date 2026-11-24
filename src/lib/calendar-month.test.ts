@@ -40,7 +40,7 @@ describe("month calendar", () => {
   it("places timed events in the selected timezone and keeps multi-hour overlaps visible", () => {
     const events = [
       { id: "a", title: "Workshop", starts_at: "2026-11-24T08:15:00.000Z", ends_at: "2026-11-24T10:15:00.000Z", is_all_day: false },
-      { id: "b", title: "Call", starts_at: "2026-11-24T09:00:00.000Z", ends_at: "2026-11-24T09:30:00.000Z", is_all_day: false },
+      { id: "b", title: "Call", starts_at: "2026-11-24T08:00:00.000Z", ends_at: "2026-11-24T08:30:00.000Z", is_all_day: false },
     ];
     const slots = scheduleHoursForDate("2026-11-24", "Europe/Berlin", events);
     const nine = slots.find((slot) => slot.label === "09:00");
