@@ -3,6 +3,7 @@ import type { Database } from "@/types/database";
 export type FocusSession = Database["public"]["Tables"]["focus_sessions"]["Row"];
 export const focusChannelName = (ownerId: string) => `dayflow-focus-session:${ownerId}`;
 export const focusStorageKey = (ownerId: string) => `dayflow-focus-session-update:${ownerId}`;
+export const focusSyncEventName = "dayflow:focus-session-sync";
 
 export function readFocusSyncSession(value: unknown, ownerId: string): FocusSession | null {
   if (typeof value !== "object" || value === null) return null;
