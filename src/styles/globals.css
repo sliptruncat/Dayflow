@@ -233,3 +233,11 @@ p{ text-wrap:pretty }
  .today-capture-actions [role="status"]{flex-basis:100%}
 }
 
+
+/* Persistent focus indicator stays visible throughout the workspace. */
+.context-bar-actions{display:flex;align-items:center;gap:10px;min-width:0}
+.focus-mini-timer{display:inline-flex;align-items:center;gap:8px;max-width:100%;padding:7px 11px;border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--ink);font-size:11px;font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums;transition:background .16s,border-color .16s,transform .16s}
+.focus-mini-timer:hover{background:var(--surface-raised);border-color:var(--line-strong);transform:translateY(-1px)}
+.focus-mini-timer strong{font-variant-numeric:tabular-nums;letter-spacing:.04em}
+.focus-mini-timer__dot{width:7px;height:7px;flex:0 0 7px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 16%,transparent)}
+@media(max-width:700px){.context-bar-actions{gap:6px}.focus-mini-timer{gap:6px;padding:6px 8px;font-size:10px}.context-bar{gap:8px}.context-bar-actions .context-status{display:none}}
