@@ -95,7 +95,7 @@ export function PersonalModuleWorkspace({ kind }: { kind: ModuleKind }) {
 
   const heading = kind === "finance" ? "Финансы" : kind === "contacts" ? "Контакты" : "Здоровье";
   const description = kind === "finance" ? "Фиксируйте доходы и расходы. Данные доступны только в вашем аккаунте." : kind === "contacts" ? "Собирайте важные контакты и сохраняйте контекст общения." : "Личный дневник самочувствия. Заполняйте только те показатели, которыми хотите делиться с DAYFLOW.";
-  return <section className="page-stack personal-module">
+  return <><section className="page-stack personal-module">
     <header className="page-heading"><p className="eyebrow">DAYFLOW / ЛИЧНОЕ ПРОСТРАНСТВО</p><h1>{heading}</h1><p>{description}</p></header>
     <div className="personal-module-grid">
       <form className="personal-module-form" onSubmit={submit}>
