@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { navigationItems, type AppSection } from "@/lib/navigation";
 import { isThemeId, themeStorageKey, type ThemeId } from "@/lib/themes";
@@ -12,8 +12,27 @@ type AppShellProps = { children: React.ReactNode; activeSection?: AppSection; co
 
 export function AppShell({ children, context, activeSection }: AppShellProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const [theme, setTheme] = useState<ThemeId>(context.preferences?.theme_id ?? "sage");
   const [menuOpen, setMenuOpen] = useState(false);
+
+  // UTC is the database default, not a useful personal default for most people.
+  // Detect the browser timezone once and save it so every server-rendered section
+  // uses the same local day and time.
+  useEffect(() => {
+    if (!context.user || !context.preferences || context.preferences.timezone !== "UTC") return;
+    const localTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (!localTimezone || localTimezone === "UTC") return;
+    let active = true;
+    void fetch("/api/preferences", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ timezone: localTimezone }),
+    }).then((response) => {
+      if (response.ok && active) router.refresh();
+    }).catch(() => undefined);
+    return () => { active = false; };
+  }, [context.user, context.preferences, router]);
 
   useEffect(() => {
     if (!context.user) {
