@@ -1,34 +1,33 @@
 # DAYFLOW implementation status
 
-This document distinguishes local code from cloud deployment. A page rendering successfully does not by itself prove that its database-backed actions are available.
+Этот документ различает реализованный код, проверенное состояние облака и незавершённые возможности. Наличие экрана само по себе не означает, что весь сценарий готов к Production.
 
-## Implemented in this source tree
+## Реализовано в исходном коде
+- Основа авторизации, профиль пользователя, настройки и три палитры.
+- Календарь, задачи, события, категории и подзадачи.
+- Focus-сессии, XP, достижения и стадии виртуального компаньона.
+- Inbox: создание, статусы, архивирование и удаление.
+- Цели: дата, прогресс и жизненный цикл.
+- Записи расписания напоминаний и отмена; фактической доставки push/email пока нет.
+- Базовая фактическая аналитика по сохранённым задачам, Focus, целям и напоминаниям.
+- Assistant capture сохраняет запрос в Inbox; вызова AI-модели пока нет.
 
-- Authentication shell, user profile/preferences and three theme palettes.
-- Calendar, task and event workflows; categories and subtasks.
-- Focus sessions, progression/XP, achievements and companion-stage calculation.
-- Inbox capture, status changes (open/processed/archived), restore and delete.
-- Goals with target date, progress and active/completed/paused lifecycle.
-- Task reminder scheduling and cancellation. The current implementation stores reminder schedules; it does not deliver push/email notifications on its own.
-- Factual analytics from saved tasks, focus sessions, goals and reminder rows.
-- Assistant capture flow that saves a prompt into Inbox. It does not call an AI model until a server-side OpenAI key and AI endpoint are configured.
+## Проверенные факты по облаку и CI
+- История Supabase проверена: все шесть миграций с версиями 202611180001–202611190005 присутствуют на удалённом проекте и совпадают с локальной историей.
+- CI на объединённом коммите main выполняет lint, typecheck, unit tests и build.
+- SQL job CI поднимает временный локальный Supabase, применяет миграции с нуля и запускает SQL-регрессии Phase 2, Phase 3 и Phase 4A.
+- Файлы supabase/tests/phase4b_planner.sql и supabase/tests/timezone_validation.sql существуют, но текущий CI их пока не запускает.
+- Полноценного браузерного E2E-покрытия пока нет.
 
-## Intentionally not represented as finished
+## Не завершено / запланировано
+- Финансы, CRM/контакты и здоровье — будущие модули; текущие пункты навигации являются заглушками.
+- Push/email требуют доверенного фонового worker и настройки провайдера.
+- Голосовое/визуальное извлечение задач, OpenAI assistant, календарная синхронизация и нативные iOS/Android-приложения не реализованы.
+- Для совместной работы есть база данных, но приглашения, membership, авторизация и UI сценарии нельзя считать готовыми.
+- Полная проверка двух пользователей, Storage, доступности и production security review ещё требуются.
 
-- Finance, contacts/CRM and health integrations remain planned extensions. Their navigation entries are informational placeholders.
-- Push notifications/email delivery require a trusted scheduled worker and provider configuration.
-- Voice/image task extraction, calendar synchronization and native iOS/Android integrations are not implemented.
-- The assistant does not fabricate model output; it clearly offers Inbox capture until AI is configured.
-
-## Database deployment state
-
-The development history for this repository records migrations `202611180001_identity_and_preferences.sql` and `202611190001_calendar_and_tasks.sql` as applied to the connected Supabase project. Migrations `202611190002_phase4a_database_foundation.sql` through `202611190005_inbox_goals_reminders.sql` are local pending migrations and must not be assumed present in the cloud database.
-
-Before applying pending migrations, review them as a single ordered set against the target Supabase project and take a database backup. Apply only after explicit approval. Never use `supabase db reset` against the existing project.
-
-## Local verification
-
-Run from the repository root:
+## Локальная проверка
+Из корня репозитория:
 
 ```powershell
 npm.cmd ci
@@ -38,4 +37,7 @@ npm.cmd test
 npm.cmd run build
 ```
 
-A successful local build does not replace isolated Supabase RLS tests or a two-account end-to-end check. Do not include `.env.local`, `.git`, `node_modules` or `.next` in source archives.
+Успешная сборка не заменяет изолированные Supabase RLS-тесты и браузерные E2E. Не включать .env.local, .git, node_modules и .next в архивы исходников.
+
+## Безопасность базы данных
+Каждую миграцию проверять как часть упорядоченного набора. Перед production-изменениями делать резервную копию и применять изменения только после явного согласования. Никогда не использовать supabase db reset против существующего проекта.
