@@ -39,7 +39,7 @@ export function PersonalModuleWorkspace({ kind, timeZone = "UTC" }: { kind: Modu
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [contactNotes, setContactNotes] = useState("");
-  const [entryDate, setEntryDate] = useState(localDateKey());
+  const [entryDate, setEntryDate] = useState(() => localDateKey(timeZone));
   const [sleep, setSleep] = useState("");
   const [mood, setMood] = useState("");
   const [energy, setEnergy] = useState("");
