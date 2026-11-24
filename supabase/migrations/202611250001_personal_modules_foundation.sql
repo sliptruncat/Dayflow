@@ -39,7 +39,7 @@ create table public.finance_budgets (
   starts_on date not null default current_date,
   created_at timestamptz not null default now(),
   constraint finance_budgets_category_owner_fkey foreign key (owner_id, category_id)
-    references public.finance_categories(owner_id, id) on delete set null
+    references public.finance_categories(owner_id, id) on delete set null (category_id)
 );
 create table public.contacts (
   id uuid primary key default gen_random_uuid(),
