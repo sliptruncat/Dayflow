@@ -1,15 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { mergeFocusSessions } from "@/lib/focus-sync";
+import { focusChannelName, focusStorageKey, mergeFocusSessions, readFocusSyncSession } from "@/lib/focus-sync";
 import type { Database } from "@/types/database";
 
 type Task = Database["public"]["Tables"]["tasks"]["Row"];
 type Session = Database["public"]["Tables"]["focus_sessions"]["Row"];
 type Progress = Database["public"]["Tables"]["user_progress"]["Row"] | null;
-
-const FOCUS_CHANNEL_PREFIX = "dayflow-focus-session";
-const FOCUS_STORAGE_PREFIX = "dayflow-focus-session-update";
 
 const stages = {
   egg: ["🥚", "Яйцо", "Ещё немного заботы — и он появится."],
@@ -23,22 +20,6 @@ function getElapsedSeconds(session: Session, now = Date.now()) {
   if (session.status !== "running") return saved;
   const sinceStart = Math.max(0, Math.floor((now - new Date(session.started_at).getTime()) / 1000));
   return Math.min(session.duration_seconds, saved + sinceStart);
-}
-
-function readSyncSession(value: unknown, ownerId: string): Session | null {
-  if (typeof value !== "object" || value === null) return null;
-  const message = value as Record<string, unknown>;
-  if (message.type !== "session-updated" || typeof message.session !== "object" || message.session === null) return null;
-  const session = message.session as Record<string, unknown>;
-  if (
-    typeof session.id !== "string" ||
-    session.owner_id !== ownerId ||
-    typeof session.started_at !== "string" ||
-    typeof session.duration_seconds !== "number" ||
-    typeof session.elapsed_seconds !== "number" ||
-    !["running", "paused", "completed", "cancelled"].includes(String(session.status))
-  ) return null;
-  return session as unknown as Session;
 }
 
 export function FocusStudio({
@@ -67,12 +48,9 @@ export function FocusStudio({
   const remaining = Math.max(0, (active?.duration_seconds ?? duration) - elapsed);
   const stage = stages[progress?.companion_stage ?? "egg"];
 
-  // Keep already-open tabs/windows in sync. The persisted session remains the source of truth;
-  // BroadcastChannel is the fast path and the storage event is a compatibility fallback.
   useEffect(() => {
     if (!ownerId) return;
-    const channelName = `${FOCUS_CHANNEL_PREFIX}:${ownerId}`;
-    const storageKey = `${FOCUS_STORAGE_PREFIX}:${ownerId}`;
+    const storageKey = focusStorageKey(ownerId);
     const applySession = (session: Session) => {
       setSessions((current) => mergeFocusSessions(current, session));
       setActive((current) => {
@@ -80,27 +58,24 @@ export function FocusStudio({
         return current?.id === session.id ? null : current;
       });
     };
-
-    const channel = typeof BroadcastChannel !== "undefined" ? new BroadcastChannel(channelName) : null;
+    const channel = typeof BroadcastChannel !== "undefined" ? new BroadcastChannel(focusChannelName(ownerId)) : null;
     if (channel) {
       channel.onmessage = (event: MessageEvent<unknown>) => {
-        const session = readSyncSession(event.data, ownerId);
+        const session = readFocusSyncSession(event.data, ownerId);
         if (session) applySession(session);
       };
       channelRef.current = channel;
     }
-
     const onStorage = (event: StorageEvent) => {
       if (event.key !== storageKey || !event.newValue) return;
       try {
-        const session = readSyncSession(JSON.parse(event.newValue), ownerId);
+        const session = readFocusSyncSession(JSON.parse(event.newValue), ownerId);
         if (session) applySession(session);
       } catch {
-        // Ignore malformed cross-tab messages; the server session remains authoritative.
+        // Ignore malformed messages; the persisted server session remains authoritative.
       }
     };
     window.addEventListener("storage", onStorage);
-
     return () => {
       window.removeEventListener("storage", onStorage);
       channel?.close();
@@ -110,21 +85,19 @@ export function FocusStudio({
 
   function publishSession(session: Session) {
     if (!ownerId || session.owner_id !== ownerId) return;
-    const message = {
-      type: "session-updated",
-      session,
-      nonce: `${Date.now()}-${Math.random()}`,
-    };
-    channelRef.current?.postMessage(message);
+    const message = { type: "session-updated", session, nonce: `${Date.now()}-${Math.random()}` };
+    if (channelRef.current) {
+      channelRef.current.postMessage(message);
+      return;
+    }
     try {
-      window.localStorage.setItem(`${FOCUS_STORAGE_PREFIX}:${ownerId}`, JSON.stringify(message));
+      window.localStorage.setItem(focusStorageKey(ownerId), JSON.stringify(message));
     } catch {
-      // BroadcastChannel still works when localStorage is unavailable.
+      // Cross-tab sync is best-effort when browser messaging and local storage are unavailable.
     }
   }
 
-  // Derive the running timer from its persisted start timestamp, not from a page-local counter.
-  // This restores the correct time after navigation, refreshes and reopening the browser.
+  // The timer is derived from persisted timestamps, so navigation and reloads never reset elapsed time.
   useEffect(() => {
     if (!active) {
       setElapsed(0);
@@ -241,7 +214,7 @@ export function FocusStudio({
               <button className="text-button text-button--danger" onClick={() => void save("cancelled")}>Отменить</button>
             </div>
           )}
-          {active?.status === "running" && <p className="timer-persistence-note">Сессия сохраняется и синхронизируется между открытыми вкладками и окнами.</p>}
+          {active?.status === "running" && <p className="timer-persistence-note">Сессия синхронизируется между разделами, вкладками и окнами.</p>}
           {error && <p className="form-message form-message--error">{error}</p>}
         </section>
 
