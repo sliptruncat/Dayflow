@@ -80,7 +80,6 @@ export interface Database {
         Update: { month_start?: string; theme_id?: ThemeId | null; image_path?: string | null; source?: MonthCoverSource };
         Relationships: [];
       };
-    };
       finance_categories: {
         Row: { id: string; owner_id: string; name: string; kind: "income" | "expense"; color: string; created_at: string };
         Insert: { id?: string; owner_id: string; name: string; kind: "income" | "expense"; color?: string };
@@ -117,6 +116,7 @@ export interface Database {
         Update: { entry_date?: string; sleep_minutes?: number | null; mood?: number | null; energy?: number | null; notes?: string | null };
         Relationships: [];
       };
+    };
     Views: Record<string, never>;
     Functions: Record<string, never>;
     Enums: Record<string, never>;
