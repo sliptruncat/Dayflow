@@ -16,6 +16,8 @@ describe("personal module validation", () => {
     expect(contactSchema.safeParse({ full_name: "Alex", email: "" }).success).toBe(true);
     expect(contactSchema.safeParse({ full_name: "Alex", email: "not-an-email" }).success).toBe(false);
     expect(contactSchema.safeParse({ full_name: "Alex", birthday: "2026-02-30" }).success).toBe(false);
+    expect(contactSchema.safeParse({ full_name: "Alex", next_follow_up_at: "2026-11-30" }).success).toBe(true);
+    expect(contactSchema.safeParse({ full_name: "Alex", next_follow_up_at: "2026-02-30" }).success).toBe(false);
   });
 
   it("validates health ranges, real dates and requires at least one entry value", () => {
