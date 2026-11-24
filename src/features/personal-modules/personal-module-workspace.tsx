@@ -228,7 +228,7 @@ function FinancePlanningPanel({ transactions, onCategoriesChange }: { transactio
               <div className="finance-budget-progress" role="progressbar" aria-label={`Использовано бюджета «${b.name}»`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.min(100, Math.max(0, usage.percent))}>
                 <span style={{ width: `${Math.min(100, Math.max(0, usage.percent))}%` }} />
               </div>
-              <small>{formatDateKey(usage.window.start)} — {formatDateKey(new Date(new Date(`${usage.window.endExclusive}T12:00:00.000Z`).getTime() - 86_400_000).toISOString().slice(0, 10))} · потрачено {usage.spent.toLocaleString("ru-RU")} {b.currency} ({usage.percent}%) · {usage.remaining >= 0 ? `осталось ${usage.remaining.toLocaleString("ru-RU")} ${b.currency}` : `превышение ${Math.abs(usage.remaining).toLocaleString("ru-RU")} ${b.currency}`}</small>
+              <small>{formatDateKey(usage.window.start)} — {formatDateKey(new Date(new Date(`${usage.window.endExclusive}T12:00:00.000Z`).getTime() - 86_400_000).toISOString().slice(0, 10))} · потрачено {usage.spent.toLocaleString("ru-RU")} {b.currency} ({usage.percent}%) · по загруженным операциям · {usage.remaining >= 0 ? `осталось ${usage.remaining.toLocaleString("ru-RU")} ${b.currency}` : `превышение ${Math.abs(usage.remaining).toLocaleString("ru-RU")} ${b.currency}`}</small>
             </> : <small>Бюджет начнёт действовать {formatDateKey(b.starts_on)}</small>}
           </li>;
         })}</ul>
