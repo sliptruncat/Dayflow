@@ -5,6 +5,7 @@ import { VoiceInput } from "@/components/voice-input";
 import type { Database, TaskPriority } from "@/types/database";
 import { dateKey, dateKeyInTimeZone, dateTimeInputInTimeZone, eventsByDate, monthGrid, shiftMonth, tasksByDeadline, zonedDateTimeToIso } from "@/lib/calendar-month";
 import { groupSubtasksByTask } from "@/lib/task-subtasks";
+import { scheduleHoursForDate } from "@/lib/calendar-schedule";
 
 type Task = Database["public"]["Tables"]["tasks"]["Row"];
 type CalendarEvent = Database["public"]["Tables"]["calendar_events"]["Row"];
@@ -123,8 +124,62 @@ function CalendarView(props: Parameters<typeof MonthCalendar>[0] & { view: "year
   if (props.view === "year") return <YearCalendar {...props} />;
   return <ScheduleCalendar {...props} />;
 }
-function YearCalendar({ year, tasks, events, timeZone, onSelectDate }: Parameters<typeof MonthCalendar>[0]) { return <section className="year-calendar"><div className="month-toolbar"><h2>{year}</h2></div><div className="year-grid">{Array.from({ length: 12 }, (_, month) => { const items = monthGrid(year, month).filter((day) => day.inMonth); const count = items.reduce((total, day) => total + (tasksByDeadline(tasks, timeZone)[day.key]?.length ?? 0) + (eventsByDate(events, timeZone)[day.key]?.length ?? 0), 0); return <button key={month} type="button" className="year-month" onClick={() => onSelectDate(dateKey(year, month, 1))}><strong>{new Intl.DateTimeFormat("ru-RU", { month: "long", timeZone: "UTC" }).format(new Date(Date.UTC(year, month, 1)))}</strong><span>{count} записей</span><div>{items.map((day) => <i key={day.key} className={(tasksByDeadline(tasks, timeZone)[day.key]?.length ?? 0) + (eventsByDate(events, timeZone)[day.key]?.length ?? 0) ? "busy" : ""} />)}</div></button>; })}</div></section>; }
-function ScheduleCalendar({ view, selectedDate, tasks, events, timeZone, onSelectDate, onEdit, onEditEvent }: Parameters<typeof CalendarView>[0]) { const anchor = new Date(`${selectedDate}T12:00:00Z`); const monday = new Date(anchor); monday.setUTCDate(anchor.getUTCDate() - ((anchor.getUTCDay() + 6) % 7)); const dates = view === "day" ? [selectedDate] : Array.from({ length: 7 }, (_, index) => { const day = new Date(monday); day.setUTCDate(monday.getUTCDate() + index); return day.toISOString().slice(0, 10); }); const groupedTasks = tasksByDeadline(tasks, timeZone); const groupedEvents = eventsByDate(events, timeZone); return <section className="schedule-calendar"><div className="schedule-days">{dates.map((key) => <div className="schedule-day" key={key}><button type="button" onClick={() => onSelectDate(key)}><strong>{new Intl.DateTimeFormat("ru-RU", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" }).format(new Date(`${key}T12:00:00Z`))}</strong></button>{Array.from({ length: 24 }, (_, hour) => <div className="schedule-hour" key={hour}><small>{String(hour).padStart(2, "0")}:00</small>{(groupedEvents[key] ?? []).filter((event) => !event.is_all_day && new Date(event.starts_at).getUTCHours() === hour).map((event) => <button type="button" className="schedule-event" key={event.id} onClick={() => onEditEvent(event)}>{event.title}</button>)}</div>)}<div className="schedule-all-day">{(groupedEvents[key] ?? []).filter((event) => event.is_all_day).map((event) => <button type="button" key={event.id} onClick={() => onEditEvent(event)}>{event.title}</button>)}{(groupedTasks[key] ?? []).map((task) => <button type="button" key={task.id} className={task.status === "completed" ? "is-done" : ""} onClick={() => onEdit(task)}>{task.title}</button>)}</div></div>)}</div>{view === "day" && <aside className="unscheduled"><h3>Без даты</h3>{tasks.filter((task) => !task.deadline_at && task.status !== "completed").map((task) => <button type="button" key={task.id} onClick={() => onEdit(task)}>{task.title}</button>)}</aside>}</section>; }
+function YearCalendar({ year, tasks, events, timeZone, onSelectDate }: Parameters<typeof MonthCalendar>[0]) {
+  const groupedTasks = useMemo(() => tasksByDeadline(tasks, timeZone), [tasks, timeZone]);
+  const groupedEvents = useMemo(() => eventsByDate(events, timeZone), [events, timeZone]);
+  return <section className="year-calendar"><div className="month-toolbar"><h2>{year}</h2></div><div className="year-grid">{Array.from({ length: 12 }, (_, month) => { const items = monthGrid(year, month).filter((day) => day.inMonth); const count = items.reduce((total, day) => total + (groupedTasks[day.key]?.length ?? 0) + (groupedEvents[day.key]?.length ?? 0), 0); return <button key={month} type="button" className="year-month" onClick={() => onSelectDate(dateKey(year, month, 1))}><strong>{new Intl.DateTimeFormat("ru-RU", { month: "long", timeZone: "UTC" }).format(new Date(Date.UTC(year, month, 1)))}</strong><span>{count} записей</span><div>{items.map((day) => <i key={day.key} className={(groupedTasks[day.key]?.length ?? 0) + (groupedEvents[day.key]?.length ?? 0) ? "busy" : ""} />)}</div></button>; })}</div></section>;
+}
+function ScheduleCalendar({ view, selectedDate, tasks, events, timeZone, onSelectDate, onEdit, onEditEvent }: Parameters<typeof CalendarView>[0]) {
+  const dates = view === "day"
+    ? [selectedDate]
+    : (() => {
+        const anchor = new Date(`${selectedDate}T12:00:00Z`);
+        const monday = new Date(anchor);
+        monday.setUTCDate(anchor.getUTCDate() - ((anchor.getUTCDay() + 6) % 7));
+        return Array.from({ length: 7 }, (_, index) => {
+          const day = new Date(monday);
+          day.setUTCDate(monday.getUTCDate() + index);
+          return day.toISOString().slice(0, 10);
+        });
+      })();
+  const groupedTasks = tasksByDeadline(tasks, timeZone);
+  const groupedEvents = eventsByDate(events, timeZone);
+
+  return <section className="schedule-calendar">
+    <div className="schedule-days">
+      {dates.map((key) => {
+        const dayEvents = groupedEvents[key] ?? [];
+        const allDayEvents = dayEvents.filter((event) => event.is_all_day);
+        const hours = scheduleHoursForDate(key, timeZone, dayEvents);
+        return <div className="schedule-day" key={key}>
+          <button type="button" onClick={() => onSelectDate(key)}>
+            <strong>{new Intl.DateTimeFormat("ru-RU", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" }).format(new Date(`${key}T12:00:00Z`))}</strong>
+          </button>
+          {(allDayEvents.length > 0 || (groupedTasks[key] ?? []).length > 0) && <div className="schedule-all-day">
+            {allDayEvents.map((event) => <button type="button" key={event.id} onClick={() => onEditEvent(event)}>{event.title}</button>)}
+            {(groupedTasks[key] ?? []).map((task) => <button type="button" key={task.id} className={task.status === "completed" ? "is-done" : ""} onClick={() => onEdit(task)}>{task.title}</button>)}
+          </div>}
+          <div className="schedule-hours">
+            {hours.map((slot) => <div className="schedule-hour" key={slot.key}>
+              <small>{slot.label}</small>
+              <div className="schedule-hour-events">
+                {slot.events.map(({ event, startsHere }) => <button
+                  type="button"
+                  className={`schedule-event ${startsHere ? "schedule-event--start" : "schedule-event--continuation"}`}
+                  key={event.id}
+                  title={event.title}
+                  aria-label={`${event.title}, ${startsHere ? "начало" : "продолжение"}, ${slot.label}`}
+                  onClick={() => onEditEvent(event)}
+                >{startsHere ? event.title : "Продолжение"}</button>)}
+              </div>
+            </div>)}
+          </div>
+        </div>;
+      })}
+    </div>
+    {view === "day" && <aside className="unscheduled"><h3>Без даты</h3>{tasks.filter((task) => !task.deadline_at && task.status !== "completed").map((task) => <button type="button" key={task.id} onClick={() => onEdit(task)}>{task.title}</button>)}</aside>}
+  </section>;
+}
 
 function EventComposer({ selectedDate, timeZone, onCreated }: { selectedDate: string; timeZone: string; onCreated: (event: CalendarEvent) => void }) {
   const [allDay, setAllDay] = useState(false); const [savingEvent, setSavingEvent] = useState(false); const [message, setMessage] = useState<string>();
