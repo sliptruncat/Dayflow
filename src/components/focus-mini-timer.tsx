@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { focusChannelName, focusStorageKey, readFocusSyncSession, type FocusSession } from "@/lib/focus-sync";
+import { focusChannelName, focusStorageKey, focusSyncEventName, readFocusSyncSession, type FocusSession } from "@/lib/focus-sync";
 
 function remainingSeconds(session: FocusSession, now: number) {
   const elapsed = session.status === "running"
@@ -22,7 +22,9 @@ export function FocusMiniTimer({ ownerId }: { ownerId: string }) {
   useEffect(() => {
     if (!ownerId) return;
     let mounted = true;
+    let receivedSyncUpdate = false;
     const applySession = (incoming: FocusSession) => {
+      receivedSyncUpdate = true;
       setSession((current) => {
         if (incoming.status === "running" || incoming.status === "paused") return incoming;
         return current?.id === incoming.id ? null : current;
@@ -34,7 +36,7 @@ export function FocusMiniTimer({ ownerId }: { ownerId: string }) {
         const response = await fetch("/api/focus", { cache: "no-store" });
         if (!response.ok) return;
         const payload = await response.json();
-        if (mounted) setSession(payload.session?.owner_id === ownerId ? payload.session : null);
+        if (mounted && !receivedSyncUpdate) setSession(payload.session?.owner_id === ownerId ? payload.session : null);
       } catch {
         // The focus timer continues from its persisted timestamp; retry on the next navigation.
       }
@@ -46,6 +48,12 @@ export function FocusMiniTimer({ ownerId }: { ownerId: string }) {
       const incoming = readFocusSyncSession(event.data, ownerId);
       if (incoming) applySession(incoming);
     };
+
+    const onLocalSync = (event: Event) => {
+      const incoming = readFocusSyncSession((event as CustomEvent<unknown>).detail, ownerId);
+      if (incoming) applySession(incoming);
+    };
+    window.addEventListener(focusSyncEventName, onLocalSync);
 
     const storageKey = focusStorageKey(ownerId);
     const onStorage = (event: StorageEvent) => {
@@ -62,6 +70,7 @@ export function FocusMiniTimer({ ownerId }: { ownerId: string }) {
     return () => {
       mounted = false;
       window.removeEventListener("storage", onStorage);
+      window.removeEventListener(focusSyncEventName, onLocalSync);
       channel?.close();
     };
   }, [ownerId]);
