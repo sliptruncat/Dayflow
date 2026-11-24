@@ -265,3 +265,9 @@ p{ text-wrap:pretty }
 .personal-module-row-actions{grid-column:1/-1;padding-top:3px}
 .personal-module-row-actions .personal-module-delete{margin-left:auto}
 .personal-module-form-actions .text-button,.personal-module-row-actions .text-button{font-size:12px}
+
+.personal-module-planning{margin-top:26px;padding-top:24px;border-top:1px solid var(--line)}
+.personal-module-planning>.personal-module-list-heading{margin-bottom:14px}
+.personal-module-grid--secondary{margin-top:14px}
+.personal-module-chip-list{display:flex;gap:7px;flex-wrap:wrap}
+.personal-module-chip-list span{padding:6px 9px;border:1px solid var(--line);border-radius:999px;color:var(--ink-soft);font-size:11px}
