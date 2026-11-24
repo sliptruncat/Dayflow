@@ -257,3 +257,6 @@ p{ text-wrap:pretty }
 .personal-module-items small{grid-column:1/-1;color:var(--muted);font-size:.72rem;overflow-wrap:anywhere}
 @media(max-width:800px){.personal-module-grid{grid-template-columns:minmax(0,1fr)}.personal-module-form,.personal-module-list{padding:17px}.page-heading{padding-top:0}.personal-module-items li{grid-template-columns:minmax(0,1fr) auto}}
 @media(prefers-reduced-motion:no-preference){.personal-module-form,.personal-module-list{animation:personal-module-enter .35s ease both}@keyframes personal-module-enter{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}}
+
+.personal-module-delete{grid-column:1/-1;justify-self:start;padding:2px 0;color:var(--muted);font-size:11px}
+.personal-module-delete:hover{color:var(--danger,var(--ink))}
