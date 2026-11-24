@@ -124,7 +124,11 @@ function CalendarView(props: Parameters<typeof MonthCalendar>[0] & { view: "year
   if (props.view === "year") return <YearCalendar {...props} />;
   return <ScheduleCalendar {...props} />;
 }
-function YearCalendar({ year, tasks, events, timeZone, onSelectDate }: Parameters<typeof MonthCalendar>[0]) { return <section className="year-calendar"><div className="month-toolbar"><h2>{year}</h2></div><div className="year-grid">{Array.from({ length: 12 }, (_, month) => { const items = monthGrid(year, month).filter((day) => day.inMonth); const count = items.reduce((total, day) => total + (tasksByDeadline(tasks, timeZone)[day.key]?.length ?? 0) + (eventsByDate(events, timeZone)[day.key]?.length ?? 0), 0); return <button key={month} type="button" className="year-month" onClick={() => onSelectDate(dateKey(year, month, 1))}><strong>{new Intl.DateTimeFormat("ru-RU", { month: "long", timeZone: "UTC" }).format(new Date(Date.UTC(year, month, 1)))}</strong><span>{count} записей</span><div>{items.map((day) => <i key={day.key} className={(tasksByDeadline(tasks, timeZone)[day.key]?.length ?? 0) + (eventsByDate(events, timeZone)[day.key]?.length ?? 0) ? "busy" : ""} />)}</div></button>; })}</div></section>; }
+function YearCalendar({ year, tasks, events, timeZone, onSelectDate }: Parameters<typeof MonthCalendar>[0]) {
+  const groupedTasks = useMemo(() => tasksByDeadline(tasks, timeZone), [tasks, timeZone]);
+  const groupedEvents = useMemo(() => eventsByDate(events, timeZone), [events, timeZone]);
+  return <section className="year-calendar"><div className="month-toolbar"><h2>{year}</h2></div><div className="year-grid">{Array.from({ length: 12 }, (_, month) => { const items = monthGrid(year, month).filter((day) => day.inMonth); const count = items.reduce((total, day) => total + (groupedTasks[day.key]?.length ?? 0) + (groupedEvents[day.key]?.length ?? 0), 0); return <button key={month} type="button" className="year-month" onClick={() => onSelectDate(dateKey(year, month, 1))}><strong>{new Intl.DateTimeFormat("ru-RU", { month: "long", timeZone: "UTC" }).format(new Date(Date.UTC(year, month, 1)))}</strong><span>{count} записей</span><div>{items.map((day) => <i key={day.key} className={(groupedTasks[day.key]?.length ?? 0) + (groupedEvents[day.key]?.length ?? 0) ? "busy" : ""} />)}</div></button>; })}</div></section>;
+}
 function ScheduleCalendar({ view, selectedDate, tasks, events, timeZone, onSelectDate, onEdit, onEditEvent }: Parameters<typeof CalendarView>[0]) {
   const dates = view === "day"
     ? [selectedDate]
