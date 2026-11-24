@@ -4,6 +4,7 @@ import { useMemo, useState, type FormEvent } from "react";
 import { VoiceInput } from "@/components/voice-input";
 import type { Database, TaskPriority } from "@/types/database";
 import { dateKey, dateKeyInTimeZone, dateTimeInputInTimeZone, eventsByDate, monthGrid, shiftMonth, tasksByDeadline, zonedDateTimeToIso } from "@/lib/calendar-month";
+import { groupSubtasksByTask } from "@/lib/task-subtasks";
 
 type Task = Database["public"]["Tables"]["tasks"]["Row"];
 type CalendarEvent = Database["public"]["Tables"]["calendar_events"]["Row"];
@@ -20,7 +21,7 @@ export function TaskWorkspace({ initialTasks, initialEvents = [], initialCategor
   const [tasks, setTasks] = useState(initialTasks);
   const [events, setEvents] = useState(initialEvents);
   const [categories, setCategories] = useState(initialCategories);
-  const [subtasks, setSubtasks] = useState<Record<string, Subtask[]>>(() => initialSubtasks.reduce<Record<string, Subtask[]>>((grouped, subtask) => { (grouped[subtask.task_id] ??= []).push(subtask); return grouped; }, {}));
+  const [subtasks, setSubtasks] = useState<Record<string, Subtask[]>>(() => groupSubtasksByTask(initialSubtasks));
   const [search, setSearch] = useState(""); const [categoryFilter, setCategoryFilter] = useState("all"); const [statusFilter, setStatusFilter] = useState("active"); const [priorityFilter, setPriorityFilter] = useState("all"); const [view, setView] = useState<"year" | "month" | "week" | "day">("month");
   const [draft, setDraft] = useState<TaskForm>(blankForm);
   const [editing, setEditing] = useState<Task | null>(null);
