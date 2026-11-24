@@ -81,7 +81,7 @@ export function calculateBudgetUsage(
   today: string,
 ) {
   const window = getBudgetWindow(budget.starts_on, budget.period, today);
-  const spent = window ? transactions.reduce((total, transaction) => {
+  const spentCents = window ? transactions.reduce((total, transaction) => {
     if (
       transaction.kind !== "expense" ||
       transaction.currency !== budget.currency ||
@@ -89,13 +89,14 @@ export function calculateBudgetUsage(
       transaction.occurred_on >= window.endExclusive ||
       (budget.category_id !== null && transaction.category_id !== budget.category_id)
     ) return total;
-    return total + Number(transaction.amount);
+    return total + Math.round(Number(transaction.amount) * 100);
   }, 0) : 0;
-  const amount = Number(budget.amount);
+  const amountCents = Math.round(Number(budget.amount) * 100);
+  const spent = spentCents / 100;
   return {
     window,
     spent,
-    remaining: amount - spent,
-    percent: amount > 0 ? Math.round((spent / amount) * 100) : 0,
+    remaining: (amountCents - spentCents) / 100,
+    percent: amountCents > 0 ? Math.round((spentCents / amountCents) * 100) : 0,
   };
 }
