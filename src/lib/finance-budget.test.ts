@@ -34,6 +34,15 @@ describe("getBudgetWindow", () => {
 });
 
 describe("calculateBudgetUsage", () => {
+  it("keeps decimal currency arithmetic accurate to cents", () => {
+    const budget = { amount: 1, currency: "EUR", period: "monthly" as const, starts_on: "2026-11-01", category_id: null };
+    const transactions = [
+      { amount: 0.1, currency: "EUR", kind: "expense" as const, occurred_on: "2026-11-05", category_id: null },
+      { amount: 0.2, currency: "EUR", kind: "expense" as const, occurred_on: "2026-11-06", category_id: null },
+    ];
+    expect(calculateBudgetUsage(budget, transactions, "2026-11-25")).toMatchObject({ spent: 0.3, remaining: 0.7, percent: 30 });
+  });
+
   it("counts only expenses in the current period, currency and selected category", () => {
     const budget = { amount: 500, currency: "EUR", period: "monthly" as const, starts_on: "2026-11-01", category_id: "food" };
     const transactions = [
